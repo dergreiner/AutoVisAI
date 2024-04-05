@@ -20,47 +20,120 @@ pipeline.to("cuda")
 
 ##pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
 
-
-prompt= "young man sitting in a red mercedes sports car, car is driving on the road, cinematic"
-negative_prompt= "(deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, anime:1.4) text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorlydrawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, badproportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms,missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck, nsfw, inclined head, tilted head, two persons, text, symbol, logo, artist signature" 
+character_prompt= ""
+car_prompt = ""
+angle_prompt= ""
+road_prompt = ""
+traffic_prompt= ""
+situation_prompt= ""
+environment_prompt= ""
+position_prompt= ""
+shot_description_prompt= ""
+negative_prompt= ""
 actualprompt= ""
 
-def txt2img(prompt, car_input, angle_input, position_input, negative_prompt):
-    actualprompt= "A " + angle_input + " shot" + " of a " + car_input  + prompt + "ketch, monochrome, cinematic, cinematic lightening"
+## get selected values
+def generate_character_prompt(car_input):
+    global character_prompt
+    character_prompt = car_input
+    return updateprompt()
+
+def generate_car_prompt(car_input):
+    global car_prompt
+    car_prompt = car_input
+    return updateprompt()
+
+def generate_angle_prompt(angle_input):
+    global angle_prompt
+    angle_prompt = angle_input
+    return updateprompt()
+
+def generate_road_prompt(road_input):
+    global road_prompt
+    road_prompt = road_input
+    return updateprompt()
+
+def generate_traffic_prompt(traffic_input):
+    global traffic_prompt
+    traffic_prompt = traffic_input
+    return updateprompt()
+
+def generate_situation_prompt(situation_input):
+    global situation_prompt
+    situation_prompt = situation_input
+    return updateprompt()
+
+def generate_environment_prompt(environment_input):
+    global environment_prompt
+    environment_prompt = environment_input
+    return updateprompt()
+
+def generate_position_prompt(intext_input):
+    global position_prompt
+    if intext_input == "Inside the car":
+        position_prompt = "inside the car"
+    else:
+        position_prompt = "outside the car"
+    return updateprompt()
+
+def generate_shot_description_prompt(prompt_input):
+    global shot_description_prompt
+    shot_description_prompt = prompt_input
+    return updateprompt()
+
+def generate_negative_prompt(negative_prompt_input):
+    global negative_prompt
+    negative_prompt = negative_prompt_input
+    return updateprompt()
+
+## update the prompt to currently selected values
+def updateprompt():
+    global actualprompt
+    actualprompt= "A " + angle_prompt + " shot" + " of a " + car_prompt + " " + shot_description_prompt +", " +position_prompt + " , sketch, monochrome, cinematic, cinematic lightening"
+    return actualprompt
+
+def txt2img():
     actualnegativeprompt= negative_prompt + ""
-    image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, num_inference_steps=20).images[0]
+    image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
     print ("[PROMPT]: ", actualprompt)
     print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
     return image
-
-def definecar(car_input):
-    car= car_input
-    return car
-
 
 with gr.Blocks(title="Storyboard Cars", theme='gstaff/xkcd') as demo:
     gr.Markdown("## Storyboard Cars")
     with gr.Row():
         with gr.Column():
-            gr.Dropdown(["Anna", "Max"], multiselect=True, label="Character", info="Who is in the scene?")
-            car_input = gr.Interface(definecar, 
-                                        gr.Dropdown(["4-door sedan", "2-door coupe", "Van", "Sports car", "Sports utility", "Pickup truck"], label="Car Type", info="Choose the type of car in the scene"),
-                                        gr.Dropdown(["Normal", "Low angle", "High angle", "Close-Up", "Wide"], label="View Angle", info="Choose the View Angle of the scene"),
-                                        gr.CheckboxGroup(["Inside the car", "Outside the car"], label="Scene Positioning", info="Where is the scene taking place?"),
-                                        gr.Textbox(lines=3, label="Shot Description", placeholder="your describtion here"),
-                                        gr.Textbox(lines=3, label="What do you want to avoid?", placeholder="your negative prompt here"),
-                                        ##gr.Button("Generate Image",)
-                                        outputs="textbox")
-           
-        
-            
-            
+            ##character_input = gr.Dropdown(["Anna", "Max"], multiselect=True, label="Character", info="Who is in the scene?")
+            car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=["4-door sedan", "2-door coupe", "Van", "Sports car", "Sports utility", "Pickup truck"])
+            angle_input = gr.Dropdown(["Normal", "Low angle", "High angle", "Close-Up", "Wide"], label="View Angle", info="Choose the View Angle of the scene")
+            road_input =  gr.Radio(["In a busy city", "Landscape", ], label="Road", info="describes the layout of the road, including markings, topology")
+            traffic_input =  gr.Radio(["In a busy city", "Landscape", ], label="Scene Positioning", info="defines traffic infrastructures (e.g., traffic signs/lights)")
+            situation_input =  gr.Radio(["In a busy city", "Landscape", ], label="Scene Positioning", info="describes all the objects, their maneuvers, and interactions in a scenario")
+            Environment_input =  gr.Radio(["sunny", "foggy", "rainy", "storm" ], label="Scene Positioning", info="describes all the objects, their maneuvers, and interactions in a scenario")
+            intext_input =  gr.Radio(["Inside the car", "Outside the car"], label="Scene Positioning", info="Interior or exterior?")
+            prompt_input = gr.Textbox(lines=3, label="Shot Description", placeholder="your prompt here")
+            negative_prompt_input = gr.Textbox(lines=3, label="What do you want to avoid?", placeholder="your negative prompt here")
+            start_button = gr.Button("Generate Image")
         with gr.Column():
             image_output = gr.Image()
-            prompt_output = gr.TextArea(value="actualprompt", interactive=False, show_label=False)
-   
+            prompt_output = gr.TextArea(value=actualprompt, interactive=False, show_label=False)
+
+    start_button.click(fn=txt2img, inputs=[], outputs=[image_output])
+
+    #dynamic update of the prompt
+    ##character_input.change(generate_character_prompt, character_input, prompt_output)
+    prompt_input.change(generate_shot_description_prompt, prompt_input, prompt_output)
+    car_input.change(generate_car_prompt, car_input, prompt_output)
+    angle_input.change(generate_angle_prompt, angle_input, prompt_output)
+    intext_input.change(generate_position_prompt, intext_input, prompt_output)
+    negative_prompt_input.change(generate_negative_prompt, negative_prompt_input, prompt_output)
+    prompt_input.change(generate_shot_description_prompt, prompt_input, prompt_output)
+    road_input.change(generate_road_prompt, road_input, prompt_output)
+    traffic_input.change(generate_traffic_prompt, traffic_input, prompt_output)
+    situation_input.change(generate_situation_prompt, situation_input, prompt_output)
+    Environment_input.change(generate_environment_prompt, Environment_input, prompt_output)
     
-    ##start_button.click(fn=txt2img, inputs=[prompt_input, negative_prompt_input], outputs=[image_output])
-    
+
+
 
 demo.launch(share = True, debug = True)
