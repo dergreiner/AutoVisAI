@@ -114,6 +114,10 @@ def updateprompt():
     actualprompt= "A " + angle_prompt + " shot" + " of a " + car_prompt + shot_description_prompt + position_prompt  + road_prompt + traffic_prompt + situation_prompt + environment_prompt +" , sketch, monochrome, cinematic, cinematic lightening"
     return actualprompt
 
+## show the tabs
+def showmenu():
+    return gr.Row(visible=True), gr.Button(visible=False), gr.TextArea(visible=False)
+
 def txt2img():
     actualnegativeprompt= negative_prompt + ""
     image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
@@ -123,35 +127,48 @@ def txt2img():
 
 with gr.Blocks(title="Storyboard Cars", theme='gstaff/xkcd') as demo:
     gr.Markdown("## Storyboard Cars")
-    with gr.Row():
-        with gr.Column():
-                with gr.Row():
-                        with gr.Column():
-                            ##character_input = gr.Dropdown(["Anna", "Max"], multiselect=True, label="Character", info="Who is in the scene?")
-                            gr.Markdown("## Basic Scene Setup")
-                            intext_input =  gr.Radio(["Inside the car", "Outside the car"], label="Scene Positioning", info="Interior or exterior?")
-                            car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=["4-door sedan", "2-door coupe", "Van", "Sports car", "Sports utility", "Pickup truck", "Define your own car..."])
-                            customcar_input = gr.Textbox(label="Custom Car", placeholder="your custom car here", visible=False, info="Describe your custom car, be specific")
-                            angle_input = gr.Dropdown(["Normal", "Low angle", "High angle", "Close-Up", "Wide"], label="View Angle", info="Choose the View Angle of the scene")
-                            simple_input = gr.Radio(["Simple", "Complex"], label="Complexity", info="Choose the complexity of the scene")
-                with gr.Row():
-                        with gr.Column(visible=False) as detail_cols:
-                            gr.Markdown("## Defining the scene")
-                            road_input =  gr.Textbox(label="Road", placeholder="bumpy wet road", info="describes the layout of the road, including markings, topology")
-                            traffic_input =  gr.Textbox(label="Traffic", placeholder="many other cars", info="defines traffic infrastructures (e.g., traffic signs/lights)")
-                            situation_input =  gr.Textbox(label="Objects",placeholder="bumpy wet road", info="describes all the objects, their maneuvers, and interactions in a scenario")
-                            Environment_input =  gr.Textbox(label="Environment", placeholder="sunny weather, sun is bright", info="environmental condition like weather and lighting")
-                with gr.Row():
-                        with gr.Column():
-                            gr.Markdown("## Optimizing")
-                            prompt_input = gr.Textbox(lines=3, label="Shot Description", placeholder="your prompt here")
-                            negative_prompt_input = gr.Textbox(lines=3, label="What do you want to avoid?", placeholder="your negative prompt here")
-                            start_button = gr.Button("Generate Image")
-        with gr.Column():
-            image_output = gr.Image()
-            prompt_output = gr.TextArea(value=actualprompt, interactive=False, show_label=False)
-
-    start_button.click(fn=txt2img, inputs=[], outputs=[image_output])
+    with gr.Column():
+         infotext = gr.TextArea(value="Welcome to Storyboard for Cars, \n\nYou will generate new frames throughout the program. \n\nEvery time your frame is finished, it will upload to the overview tab. \nThe generation of frames may take some time depending on the performance of the system. Therefore we ask for your patience.\n\nThank you.", interactive=False, show_label=False)
+         start_button = gr.Button("Start")
+    with gr.Row(visible = False) as generating:
+         with gr.Tab(label = "Defining Basics",):
+            with gr.Row():
+                character_name_input = gr.Textbox(label="Character Name", placeholder="your character name here", info="Describe your custom car, be specific")
+                character_age_input = gr.Textbox(label="Character Age", placeholder="your character age here", info="Describe your custom car, be specific")
+                character_lookalike_input = gr.Textbox(label="Character Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.")
+         with gr.Tab(label = "Generate Image") as tab2:
+            with gr.Row():
+                with gr.Column():
+                        with gr.Row():
+                                with gr.Column():
+                                    ##character_input = gr.Dropdown(["Anna", "Max"], multiselect=True, label="Character", info="Who is in the scene?")
+                                    gr.Markdown("## Basic Scene Setup")
+                                    intext_input =  gr.Radio(["Inside the car", "Outside the car"], label="Scene Positioning", info="Interior or exterior?")
+                                    car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=["4-door sedan", "2-door coupe", "Van", "Sports car", "Sports utility", "Pickup truck", "Define your own car..."])
+                                    customcar_input = gr.Textbox(label="Custom Car", placeholder="your custom car here", visible=False, info="Describe your custom car, be specific")
+                                    angle_input = gr.Dropdown(["Normal", "Low angle", "High angle", "Close-Up", "Wide"], label="View Angle", info="Choose the View Angle of the scene")
+                                    simple_input = gr.Radio(["Simple", "Complex"], label="Complexity", info="Choose the complexity of the scene")
+                        with gr.Row():
+                                with gr.Column(visible=False) as detail_cols:
+                                    gr.Markdown("## Defining the scene")
+                                    road_input =  gr.Textbox(label="Road", placeholder="bumpy wet road", info="describes the layout of the road, including markings, topology")
+                                    traffic_input =  gr.Textbox(label="Traffic", placeholder="many other cars", info="defines traffic infrastructures (e.g., traffic signs/lights)")
+                                    situation_input =  gr.Textbox(label="Objects",placeholder="bumpy wet road", info="describes all the objects, their maneuvers, and interactions in a scenario")
+                                    Environment_input =  gr.Textbox(label="Environment", placeholder="sunny weather, sun is bright", info="environmental condition like weather and lighting")
+                        with gr.Row():
+                                with gr.Column():
+                                    gr.Markdown("## Optimizing")
+                                    prompt_input = gr.Textbox(lines=3, label="Shot Description", placeholder="your prompt here")
+                                    negative_prompt_input = gr.Textbox(lines=3, label="What do you want to avoid?", placeholder="your negative prompt here")
+                                    generate_button = gr.Button("Generate Image")
+                with gr.Column():
+                    image_output = gr.Image()
+                    prompt_output = gr.TextArea(value=actualprompt, interactive=False, show_label=False)
+         with gr.Tab(label = "Storyboard Overview") as tab3:
+            gr.Markdown("## Storyboard Overview")
+            image2_output = gr.Image()
+    start_button.click(fn=showmenu, inputs=[], outputs=[generating, start_button, infotext])
+    generate_button.click(fn=txt2img, inputs=[], outputs=[image_output])
 
     #dynamic update of the prompt
     ##character_input.change(generate_character_prompt, character_input, prompt_output)

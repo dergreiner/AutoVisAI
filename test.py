@@ -1,46 +1,40 @@
+import numpy as np
 import gradio as gr
 
+
+def flip_text(x):
+    return x[::-1]
+
+
+def flip_image(x):
+    return np.fliplr(x)
+
+
 with gr.Blocks() as demo:
-    gr.Markdown(
-        """
-    # Animal Generator
-    Once you select a species, the detail panel should be visible.
-    """
-    )
+    gr.Markdown("Flip text or image files using this demo.")
+    with gr.Tab("Flip Text"):
+        text_input = gr.Textbox()
+        text_output = gr.Textbox()
+        text_button = gr.Button("Flip")
+    with gr.Tab("Flip Image"):
+        with gr.Row():
+            image_input = gr.Image()
+            image_output = gr.Image()
+        image_button = gr.Button("Flip")
 
-    species = gr.Radio(label="Animal Class", choices=["Mammal", "Fish", "Bird"])
-    animal = gr.Dropdown(label="Animal", choices=[])
+    with gr.Accordion("Open for More!", open=False):
+        gr.Markdown("Look at me...")
+        temp_slider = gr.Slider(
+            minimum=0.0,
+            maximum=1.0,
+            value=0.1,
+            step=0.1,
+            interactive=True,
+            label="Slide me",
+        )
+        temp_slider.change(lambda x: x, [temp_slider])
 
-    with gr.Column(visible=False) as details_col:
-        weight = gr.Slider(0, 20)
-        details = gr.Textbox(label="Extra Details")
-        generate_btn = gr.Button("Generate")
-        output = gr.Textbox(label="Output")
+    text_button.click(flip_text, inputs=text_input, outputs=text_output)
+    image_button.click(flip_image, inputs=image_input, outputs=image_output)
 
-    species_map = {
-        "Mammal": ["Elephant", "Giraffe", "Hamster"],
-        "Fish": ["Shark", "Salmon", "Tuna"],
-        "Bird": ["Chicken", "Eagle", "Hawk"],
-    }
-
-    def filter_species(species):
-        return gr.Dropdown(
-            choices=species_map[species], value=species_map[species][1]
-        ), gr.Column(visible=True)
-
-    species.change(filter_species, species, [animal, details_col])
-
-    def filter_weight(animal):
-        if animal in ("Elephant", "Shark", "Giraffe"):
-            return gr.Slider(maximum=100)
-        else:
-            return gr.Slider(maximum=20)
-
-    animal.change(filter_weight, animal, weight)
-    weight.change(lambda w: gr.Textbox(lines=int(w / 10) + 1), weight, details)
-
-    generate_btn.click(lambda x: x, details, output)
-
-
-if __name__ == "__main__":
-    demo.launch()
+demo.launch()
