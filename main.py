@@ -20,6 +20,7 @@ pipeline.to("cuda")
 
 ##pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
 
+
 character_prompt= ""
 car_prompt = ""
 angle_prompt= ""
@@ -31,6 +32,11 @@ position_prompt= ""
 shot_description_prompt= ""
 negative_prompt= ""
 actualprompt= ""
+character_options = {"Alex": [18, "german"]}
+car_options = ["4-door sedan", "2-door coupe", "Van", "Sports car", "Sports utility", "Pickup truck"]
+character_names =list(character_options.keys())
+print(car_options)
+print(character_names)
 
 ## get selected values
 def generate_character_prompt(car_input):
@@ -125,18 +131,32 @@ def txt2img():
     print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
     return image
 
-with gr.Blocks(title="Storyboard Cars", theme='gstaff/xkcd') as demo:
+with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
     gr.Markdown("## Storyboard Cars")
     with gr.Column():
          infotext = gr.TextArea(value="Welcome to Storyboard for Cars, \n\nYou will generate new frames throughout the program. \n\nEvery time your frame is finished, it will upload to the overview tab. \nThe generation of frames may take some time depending on the performance of the system. Therefore we ask for your patience.\n\nThank you.", interactive=False, show_label=False)
          start_button = gr.Button("Start")
     with gr.Row(visible = False) as generating:
-         with gr.Tab(label = "Defining Basics",):
+         with gr.Tab(label = "1. Defining Basics",):
+            gr.Markdown("Here you can define options that are generally applicable to all scenes.")
             with gr.Row():
-                character_name_input = gr.Textbox(label="Character Name", placeholder="your character name here", info="Describe your custom car, be specific")
-                character_age_input = gr.Textbox(label="Character Age", placeholder="your character age here", info="Describe your custom car, be specific")
-                character_lookalike_input = gr.Textbox(label="Character Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.")
-         with gr.Tab(label = "Generate Image") as tab2:
+                    with gr.Column():
+                        gr.Markdown("## Character")
+                        character_choices = gr.TextArea(character_options, label="Characters", info="Available characters to choose from")
+                        with gr.Accordion("Click to create your own Character", open=False):
+                            character_name_input = gr.Textbox(label="Character Name", placeholder="your character name here", info="Name your character for later reference")
+                            character_age_input = gr.Slider(1, 100, step=1, value=32, interactive=True, label="Age", info="Choose an age between 1 and 100")
+                            character_lookalike_input = gr.Textbox(label="Character Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.")
+                            savecharacter_btn = gr.Button("Save Character")
+            with gr.Row():
+                    with gr.Column():
+                        gr.Markdown("## Car")
+                        char_choices = gr.Dropdown(car_options, multiselect=False, label="Cars", info="Available cars to choose from")
+                        with gr.Accordion("Click to create your own Car", open=False):
+                            char_name_input = gr.Textbox(label="Car Name", placeholder="your car name here", info="Name your custom car for later reference")
+                            char_lookalike_input = gr.Textbox(label="Car Describtion", placeholder="your car here", info="Describe your custom car, be specific")
+                            savecar_btn = gr.Button("Save Car")
+         with gr.Tab(label = "2. Generate Image") as tab2:
             with gr.Row():
                 with gr.Column():
                         with gr.Row():
@@ -144,7 +164,7 @@ with gr.Blocks(title="Storyboard Cars", theme='gstaff/xkcd') as demo:
                                     ##character_input = gr.Dropdown(["Anna", "Max"], multiselect=True, label="Character", info="Who is in the scene?")
                                     gr.Markdown("## Basic Scene Setup")
                                     intext_input =  gr.Radio(["Inside the car", "Outside the car"], label="Scene Positioning", info="Interior or exterior?")
-                                    car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=["4-door sedan", "2-door coupe", "Van", "Sports car", "Sports utility", "Pickup truck", "Define your own car..."])
+                                    car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=car_options)
                                     customcar_input = gr.Textbox(label="Custom Car", placeholder="your custom car here", visible=False, info="Describe your custom car, be specific")
                                     angle_input = gr.Dropdown(["Normal", "Low angle", "High angle", "Close-Up", "Wide"], label="View Angle", info="Choose the View Angle of the scene")
                                     simple_input = gr.Radio(["Simple", "Complex"], label="Complexity", info="Choose the complexity of the scene")
@@ -165,11 +185,23 @@ with gr.Blocks(title="Storyboard Cars", theme='gstaff/xkcd') as demo:
                     image_output = gr.Image()
                     prompt_output = gr.TextArea(value=actualprompt, interactive=False, show_label=False)
          with gr.Tab(label = "Storyboard Overview") as tab3:
-            gr.Markdown("## Storyboard Overview")
+            gr.Markdown("## 3. Storyboard Overview")
             image2_output = gr.Image()
     start_button.click(fn=showmenu, inputs=[], outputs=[generating, start_button, infotext])
     generate_button.click(fn=txt2img, inputs=[], outputs=[image_output])
 
+    def addcharacter(character_name_input,character_age_input, character_lookalike_input):
+        global character_options, character_names, character_choices
+        character_options[character_name_input] = [character_age_input, character_lookalike_input]
+        print("added character")
+        character_names =list(character_options.keys())
+        print(character_options)
+        print(character_names)
+        return character_options
+    
+
+        
+    
     #dynamic update of the prompt
     ##character_input.change(generate_character_prompt, character_input, prompt_output)
     prompt_input.change(generate_shot_description_prompt, prompt_input, prompt_output)
@@ -184,7 +216,7 @@ with gr.Blocks(title="Storyboard Cars", theme='gstaff/xkcd') as demo:
     Environment_input.change(generate_environment_prompt, Environment_input, prompt_output)
     simple_input.change(changeComplexity, simple_input, detail_cols)
     customcar_input.change(generate_complexcar_prompt, customcar_input, prompt_output)
-    
+    savecharacter_btn.click(addcharacter, inputs=[character_name_input,character_age_input, character_lookalike_input], outputs=character_choices)
     
 
 
