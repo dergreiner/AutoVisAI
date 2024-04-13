@@ -32,11 +32,31 @@ position_prompt= ""
 shot_description_prompt= ""
 negative_prompt= ""
 actualprompt= ""
-character_options = {"Alex": [18, "german"]}
-car_options = ["4-door sedan", "2-door coupe", "Van", "Sports car", "Sports utility", "Pickup truck"]
+character_options = {"Alexa": ["18 years old" , "looks like Emma Watson"]}
+car_options = [("4-door sedan", "4-door sedan"), ("2-door coupe","2-door coupe"),("Van", "Van"), ("Sports car", "Sports car"), ("Sports utility", "Sports utility"), ("Pickup truck", "Pickup truck")]
 character_names =list(character_options.keys())
-print(car_options)
-print(character_names)
+
+
+## add new characters and cars
+
+def addcharacter(character_name_input,character_age_input, character_lookalike_input):
+        global character_options, character_names, character_choices
+        age = str(character_age_input) + "years old"
+        lookalike = "looks like " + character_lookalike_input
+        character_options[character_name_input] = [age, lookalike]
+        print("added character")
+        character_names =list(character_options.keys())
+        return character_options
+    
+def addcar(car_name_input,car_description):
+        global car_options, car_input
+        car_options.append((car_name_input, car_description))
+        print("added car")
+        print(car_input.choices)
+        car_input.choices = car_options
+        print(car_input.choices)
+        return car_options, gr.Dropdown(choices=car_options)
+
 
 ## get selected values
 def generate_character_prompt(car_input):
@@ -124,11 +144,17 @@ def updateprompt():
 def showmenu():
     return gr.Row(visible=True), gr.Button(visible=False), gr.TextArea(visible=False)
 
+## generate the image
 def txt2img():
     actualnegativeprompt= negative_prompt + ""
     image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
     print ("[PROMPT]: ", actualprompt)
     print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
+    return image
+
+def img2img():
+    pipeline2= AutoPipelineForImage2Image.from_pipeline(pipeline)
+    image = pipeline(images = image, width=1064, height=608).images[0]
     return image
 
 with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
@@ -151,10 +177,10 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
             with gr.Row():
                     with gr.Column():
                         gr.Markdown("## Car")
-                        char_choices = gr.Dropdown(car_options, multiselect=False, label="Cars", info="Available cars to choose from")
+                        car_choices = gr.TextArea(car_options, label="Cars", info="Available cars to choose from")
                         with gr.Accordion("Click to create your own Car", open=False):
-                            char_name_input = gr.Textbox(label="Car Name", placeholder="your car name here", info="Name your custom car for later reference")
-                            char_lookalike_input = gr.Textbox(label="Car Describtion", placeholder="your car here", info="Describe your custom car, be specific")
+                            car_name_input = gr.Textbox(label="Car Name", placeholder="your car name here", info="Name your custom car for later reference")
+                            car_description = gr.Textbox(label="Car Describtion", placeholder="your car here", info="Describe your custom car, be specific")
                             savecar_btn = gr.Button("Save Car")
          with gr.Tab(label = "2. Generate Image") as tab2:
             with gr.Row():
@@ -190,16 +216,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
     start_button.click(fn=showmenu, inputs=[], outputs=[generating, start_button, infotext])
     generate_button.click(fn=txt2img, inputs=[], outputs=[image_output])
 
-    def addcharacter(character_name_input,character_age_input, character_lookalike_input):
-        global character_options, character_names, character_choices
-        character_options[character_name_input] = [character_age_input, character_lookalike_input]
-        print("added character")
-        character_names =list(character_options.keys())
-        print(character_options)
-        print(character_names)
-        return character_options
     
-
         
     
     #dynamic update of the prompt
@@ -217,6 +234,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
     simple_input.change(changeComplexity, simple_input, detail_cols)
     customcar_input.change(generate_complexcar_prompt, customcar_input, prompt_output)
     savecharacter_btn.click(addcharacter, inputs=[character_name_input,character_age_input, character_lookalike_input], outputs=character_choices)
+    savecar_btn.click(addcar, inputs=[car_name_input,car_description], outputs=[car_choices, car_input])
     
 
 
