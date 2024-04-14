@@ -3,7 +3,9 @@ from diffusers import DPMSolverMultistepScheduler
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline
 from diffusers import AutoPipelineForText2Image, AutoPipelineForImage2Image
 import torch
+from torch import autocast
 import gradio as gr 
+
 
 
 model_id1 = "runwayml/stable-diffusion-v1-5"
@@ -15,6 +17,7 @@ model_id5 = "stabilityai/stable-diffusion-xl-base-1.0"
 torch.cuda.empty_cache()
 
 pipeline = AutoPipelineForText2Image.from_pretrained(model_id3, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
+pipelineImg2Img= AutoPipelineForImage2Image.from_pipe(pipeline)
 pipeline.to("cuda")
 
 
@@ -137,7 +140,7 @@ def changeComplexity(complexity):
 ## update the prompt to currently selected values
 def updateprompt():
     global actualprompt
-    actualprompt= "A " + angle_prompt + " shot" + " of a " + car_prompt + shot_description_prompt + position_prompt  + road_prompt + traffic_prompt + situation_prompt + environment_prompt +" , sketch, monochrome, cinematic, cinematic lightening"
+    actualprompt= "A " + angle_prompt + " shot" + " of a " + car_prompt + shot_description_prompt + position_prompt  + road_prompt + traffic_prompt + situation_prompt + environment_prompt +" , sketch, monochrome, cinematic, cinematic light"
     return actualprompt
 
 ## show the tabs
@@ -145,17 +148,19 @@ def showmenu():
     return gr.Row(visible=True), gr.Button(visible=False), gr.TextArea(visible=False)
 
 ## generate the image
-def txt2img():
+def generateimage(init_image, strength_slider):
     actualnegativeprompt= negative_prompt + ""
-    image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
+    if init_image is not None:
+        image = pipelineImg2Img(prompt = actualprompt, image=init_image, strength=0.5).images[0]
+        print("[Model]: Img2Img")
+    else:
+        image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
+        print("[Model]: Text2Img")
+
     print ("[PROMPT]: ", actualprompt)
     print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
     return image
 
-def img2img():
-    pipeline2= AutoPipelineForImage2Image.from_pipeline(pipeline)
-    image = pipeline(images = image, width=1064, height=608).images[0]
-    return image
 
 with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
     gr.Markdown("## Storyboard Cars")
@@ -189,6 +194,8 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
                                 with gr.Column():
                                     ##character_input = gr.Dropdown(["Anna", "Max"], multiselect=True, label="Character", info="Who is in the scene?")
                                     gr.Markdown("## Basic Scene Setup")
+                                    img_input = gr.Image()
+                                    strength_slider = gr.Slider(label="Strength",maximum = 1, value = 0.75 , step = 0.10, info="The strength of the img2img effect")
                                     intext_input =  gr.Radio(["Inside the car", "Outside the car"], label="Scene Positioning", info="Interior or exterior?")
                                     car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=car_options)
                                     customcar_input = gr.Textbox(label="Custom Car", placeholder="your custom car here", visible=False, info="Describe your custom car, be specific")
@@ -212,9 +219,10 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
                     prompt_output = gr.TextArea(value=actualprompt, interactive=False, show_label=False)
          with gr.Tab(label = "Storyboard Overview") as tab3:
             gr.Markdown("## 3. Storyboard Overview")
+            gallery = gr.Gallery(label="Generated images", show_label=False)
             image2_output = gr.Image()
     start_button.click(fn=showmenu, inputs=[], outputs=[generating, start_button, infotext])
-    generate_button.click(fn=txt2img, inputs=[], outputs=[image_output])
+    generate_button.click(fn=generateimage, inputs=[img_input, strength_slider], outputs=[image_output])
 
     
         
