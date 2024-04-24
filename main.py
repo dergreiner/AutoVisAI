@@ -5,8 +5,14 @@ from diffusers import AutoPipelineForText2Image, AutoPipelineForImage2Image
 import torch
 from torch import autocast
 import gradio as gr 
+from diffusers.utils import make_image_grid, load_image
 
 
+mycss = """
+.black-text {
+    color: black !important;
+}
+"""
 
 model_id1 = "runwayml/stable-diffusion-v1-5"
 model_id2 = "dreamlike-art/dreamlike-diffusion-1.0"
@@ -16,10 +22,12 @@ model_id5 = "stabilityai/stable-diffusion-xl-base-1.0"
 
 torch.cuda.empty_cache()
 
-pipeline = AutoPipelineForText2Image.from_pretrained(model_id3, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
-pipelineImg2Img= AutoPipelineForImage2Image.from_pipe(pipeline)
+pipeline = AutoPipelineForText2Image.from_pretrained(model_id1, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
 pipeline.to("cuda")
+pipelineImg2Img= AutoPipelineForImage2Image.from_pipe(pipeline)
+pipelineImg2Img.to("cuda")
 
+##pipelineImg2Img.enable_model_cpu_offload()
 
 ##pipeline.scheduler = DPMSolverMultistepScheduler.from_config(pipeline.scheduler.config)
 
@@ -38,6 +46,25 @@ actualprompt= ""
 character_options = {"Alexa": ["18 years old" , "looks like Emma Watson"]}
 car_options = [("4-door sedan", "4-door sedan"), ("2-door coupe","2-door coupe"),("Van", "Van"), ("Sports car", "Sports car"), ("Sports utility", "Sports utility"), ("Pickup truck", "Pickup truck")]
 character_names =list(character_options.keys())
+
+
+## generate the image , guidance_scale=7.5,  width=1064, height=608
+def generateimage(init_image, strength_slider):
+    url = "https://global.discourse-cdn.com/hellohellohello/original/3X/c/1/c1f3e18330ce1273809da41d16a634d7becdd420.jpeg"
+    
+    actualnegativeprompt= negative_prompt + ""
+    if init_image is not None:
+        image = pipelineImg2Img(prompt = actualprompt, image=init_image, strength=strength_slider, guidance_scale=10.5).images[0]
+        print("[Model]: Img2Img")
+        print("Strength: " + str(strength_slider))
+    else:
+        image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
+        print("[Model]: Text2Img")
+
+    print ("[PROMPT]: ", actualprompt)
+    print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
+    return image
+
 
 
 ## add new characters and cars
@@ -140,29 +167,17 @@ def changeComplexity(complexity):
 ## update the prompt to currently selected values
 def updateprompt():
     global actualprompt
-    actualprompt= "A " + angle_prompt + " shot" + " of a " + car_prompt + shot_description_prompt + position_prompt  + road_prompt + traffic_prompt + situation_prompt + environment_prompt +" , sketch, monochrome, cinematic, cinematic light"
+    actualprompt= "Astronaut in a jungle, cold color palette, muted colors, detailed, 8k"
+    ## actualprompt= "A " + angle_prompt + " shot" + " of a " + car_prompt + shot_description_prompt + position_prompt  + road_prompt + traffic_prompt + situation_prompt + environment_prompt +" , sketch, monochrome, cinematic, cinematic light"
     return actualprompt
 
 ## show the tabs
 def showmenu():
     return gr.Row(visible=True), gr.Button(visible=False), gr.TextArea(visible=False)
 
-## generate the image
-def generateimage(init_image, strength_slider):
-    actualnegativeprompt= negative_prompt + ""
-    if init_image is not None:
-        image = pipelineImg2Img(prompt = actualprompt, image=init_image, strength=0.5).images[0]
-        print("[Model]: Img2Img")
-    else:
-        image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
-        print("[Model]: Text2Img")
-
-    print ("[PROMPT]: ", actualprompt)
-    print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
-    return image
 
 
-with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
+with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) as demo:
     gr.Markdown("## Storyboard Cars")
     with gr.Column():
          infotext = gr.TextArea(value="Welcome to Storyboard for Cars, \n\nYou will generate new frames throughout the program. \n\nEvery time your frame is finished, it will upload to the overview tab. \nThe generation of frames may take some time depending on the performance of the system. Therefore we ask for your patience.\n\nThank you.", interactive=False, show_label=False)
@@ -172,20 +187,27 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
             gr.Markdown("Here you can define options that are generally applicable to all scenes.")
             with gr.Row():
                     with gr.Column():
-                        gr.Markdown("## Character")
+                        gr.Markdown("## Persona")
                         character_choices = gr.TextArea(character_options, label="Characters", info="Available characters to choose from")
-                        with gr.Accordion("Click to create your own Character", open=False):
+                        with gr.Accordion("Click to create your own Character", open=False, elem_classes=["black-text"]):
                             character_name_input = gr.Textbox(label="Character Name", placeholder="your character name here", info="Name your character for later reference")
-                            character_age_input = gr.Slider(1, 100, step=1, value=32, interactive=True, label="Age", info="Choose an age between 1 and 100")
-                            character_lookalike_input = gr.Textbox(label="Character Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.")
+                            character_lookalike_input = gr.Textbox(label="Well-known Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.")
+                            character_clothes_input = gr.Textbox(label="Clothing", placeholder=" a red dress", info="What is your Persona wearing?")
+                            with gr.Accordion("Optional details", open=False, elem_classes=["black-text"]):
+                                 character_age_input = gr.Slider(1, 100, step=1, value=32, interactive=True, label="Age", info="Choose an age between 1 and 100")
+                                 character_height_input = gr.Dropdown(label="Car Type", info="Choose heigth", choices=["very short", "short", "normal", "tall", "very tall"])
+                                 character_weight_input = gr.Dropdown(label="Weight", info="Choose the weight", choices=["very thin", "thin", "normal", "overweight", "obese"])
+                                 character_details_input = gr.Textbox(label="Additional details", placeholder="big face tatoo", info="Something Special about your character?")
                             savecharacter_btn = gr.Button("Save Character")
             with gr.Row():
                     with gr.Column():
                         gr.Markdown("## Car")
                         car_choices = gr.TextArea(car_options, label="Cars", info="Available cars to choose from")
-                        with gr.Accordion("Click to create your own Car", open=False):
+                        with gr.Accordion("Click to create your own Car", open=False, elem_classes=["black-text"]):
                             car_name_input = gr.Textbox(label="Car Name", placeholder="your car name here", info="Name your custom car for later reference")
-                            car_description = gr.Textbox(label="Car Describtion", placeholder="your car here", info="Describe your custom car, be specific")
+                            car_choice_input =  gr.Radio(["Based on a real world vehicle", "Pick a vehicle class", "Define your own"], label="Vehicle", info="What type of vehicle")
+                            car_exterior_description = gr.Textbox(label="Exterior Describtion", placeholder="futuristic, historic, autonomous", info="Describe your custom car, be specific")
+                            car_interior_description = gr.Textbox(label="Car Describtion", placeholder="your car here", info="Describe your custom car, be specific")
                             savecar_btn = gr.Button("Save Car")
          with gr.Tab(label = "2. Generate Image") as tab2:
             with gr.Row():
@@ -242,7 +264,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4") as demo:
     simple_input.change(changeComplexity, simple_input, detail_cols)
     customcar_input.change(generate_complexcar_prompt, customcar_input, prompt_output)
     savecharacter_btn.click(addcharacter, inputs=[character_name_input,character_age_input, character_lookalike_input], outputs=character_choices)
-    savecar_btn.click(addcar, inputs=[car_name_input,car_description], outputs=[car_choices, car_input])
+    savecar_btn.click(addcar, inputs=[car_name_input,car_exterior_description], outputs=[car_choices, car_input])
     
 
 
