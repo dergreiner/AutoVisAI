@@ -43,7 +43,7 @@ position_prompt= ""
 shot_description_prompt= ""
 negative_prompt= ""
 actualprompt= ""
-character_options = {"Alexa": ["18 years old" , "looks like Emma Watson"]}
+character_options = {"Alexa": {"look alike":"looks like Emma Watson", "clothes": "wearing a red dress", "age": "32 years old", "height": "is tall", "weight": "is normal", "details": "has a big face tatoo"}}
 car_options = [("4-door sedan", "4-door sedan"), ("2-door coupe","2-door coupe"),("Van", "Van"), ("Sports car", "Sports car"), ("Sports utility", "Sports utility"), ("Pickup truck", "Pickup truck")]
 character_names =list(character_options.keys())
 
@@ -66,17 +66,37 @@ def generateimage(init_image, strength_slider):
     return image
 
 
-
 ## add new characters and cars
 
-def addcharacter(character_name_input,character_age_input, character_lookalike_input):
+def addcharacter(character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input):
         global character_options, character_names, character_choices
-        age = str(character_age_input) + "years old"
+        age = str(character_age_input) + " years old"
+        clothes = "wearing " + character_clothes_input
         lookalike = "looks like " + character_lookalike_input
-        character_options[character_name_input] = [age, lookalike]
+        if character_height_input is None:
+            height = ""
+            print("height is none")
+        else:
+            height = str(character_height_input) + " "
+
+        if character_weight_input is None:
+            weight = ""
+        else:
+            weight = str(character_weight_input)+ " "
+        if character_details_input == "":
+            details = ""
+        else:
+            details = " and " + character_details_input
+        character_prompt = "a " +  height + weight + age + " person(" + lookalike + ") " + clothes + details
+        character_options[character_name_input] = [lookalike, clothes, age, height, weight, details]
+        
         print("added character")
+        print(character_prompt)
         character_names =list(character_options.keys())
         return character_options
+
+def generate_character_prompt(character_name):
+        character_options[character_name].
     
 def addcar(car_name_input,car_description):
         global car_options, car_input
@@ -195,7 +215,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
                             character_clothes_input = gr.Textbox(label="Clothing", placeholder=" a red dress", info="What is your Persona wearing?")
                             with gr.Accordion("Optional details", open=False, elem_classes=["black-text"]):
                                  character_age_input = gr.Slider(1, 100, step=1, value=32, interactive=True, label="Age", info="Choose an age between 1 and 100")
-                                 character_height_input = gr.Dropdown(label="Car Type", info="Choose heigth", choices=["very short", "short", "normal", "tall", "very tall"])
+                                 character_height_input = gr.Dropdown(label="Height", info="Choose heigth", choices=["very short", "short", "normal", "tall", "very tall"])
                                  character_weight_input = gr.Dropdown(label="Weight", info="Choose the weight", choices=["very thin", "thin", "normal", "overweight", "obese"])
                                  character_details_input = gr.Textbox(label="Additional details", placeholder="big face tatoo", info="Something Special about your character?")
                             savecharacter_btn = gr.Button("Save Character")
@@ -263,7 +283,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
     Environment_input.change(generate_environment_prompt, Environment_input, prompt_output)
     simple_input.change(changeComplexity, simple_input, detail_cols)
     customcar_input.change(generate_complexcar_prompt, customcar_input, prompt_output)
-    savecharacter_btn.click(addcharacter, inputs=[character_name_input,character_age_input, character_lookalike_input], outputs=character_choices)
+    savecharacter_btn.click(addcharacter, inputs=[character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input], outputs=character_choices)
     savecar_btn.click(addcar, inputs=[car_name_input,car_exterior_description], outputs=[car_choices, car_input])
     
 
