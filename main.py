@@ -12,6 +12,14 @@ mycss = """
 .black-text {
     color: black !important;
 }
+.optional-details {
+    color: black !important;
+    background-color: LightGrey;
+}
+.red-text {
+    text-decoration-line: underline;
+    text-decoration-color: red;
+}
 """
 
 model_id1 = "runwayml/stable-diffusion-v1-5"
@@ -43,9 +51,11 @@ position_prompt= ""
 shot_description_prompt= ""
 negative_prompt= ""
 actualprompt= ""
-character_options = {"Alexa": {"look alike":"looks like Emma Watson", "clothes": "wearing a red dress", "age": "32 years old", "height": "is tall", "weight": "is normal", "details": "has a big face tatoo"}}
-car_options = [("4-door sedan", "4-door sedan"), ("2-door coupe","2-door coupe"),("Van", "Van"), ("Sports car", "Sports car"), ("Sports utility", "Sports utility"), ("Pickup truck", "Pickup truck")]
-character_names =list(character_options.keys())
+
+## define the options for the characters and cars
+character_options = {"Alexa": {"look alike":"looks like Emma Watson", "clothes": "wearing a red dress", "age": "32 years old", "height": "tall", "weight": "normal weight", "details": "gold necklace around her neck", "prompt": "a tall normal weight 32 years old person(looks like Emma Watson) wearing a red dress and gold necklace around her neck"}} 
+car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class","exterior": "futuristic", "interior": "calm, clean, modern", "details": "big windows", "prompt": "a futuristic Mercedes S-Class with a calm, clean, modern interior"}}
+
 
 
 ## generate the image , guidance_scale=7.5,  width=1064, height=608
@@ -69,7 +79,8 @@ def generateimage(init_image, strength_slider):
 ## add new characters and cars
 
 def addcharacter(character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input):
-        global character_options, character_names, character_choices
+        global character_options, character_choices
+        ## get values
         age = str(character_age_input) + " years old"
         clothes = "wearing " + character_clothes_input
         lookalike = "looks like " + character_lookalike_input
@@ -88,24 +99,69 @@ def addcharacter(character_name_input, character_lookalike_input, character_clot
         else:
             details = " and " + character_details_input
         character_prompt = "a " +  height + weight + age + " person(" + lookalike + ") " + clothes + details
-        character_options[character_name_input] = [lookalike, clothes, age, height, weight, details]
-        
-        print("added character")
-        print(character_prompt)
-        character_names =list(character_options.keys())
-        return character_options
 
-def generate_character_prompt(character_name):
-        character_options[character_name].
+        ## store values
+        character_details = {
+            "look alike": lookalike,
+            "clothes": clothes,
+            "age": age,
+            "height": height,
+            "weight": weight,
+            "details": details,
+            "prompt": character_prompt
+        }
+        character_options[character_name_input] = character_details
+        print("added character")
+        return update_characters_outputlist(character_options)
+
+def update_characters_outputlist(character_options):
+    all_characters = []
+    for character_name, details in character_options.items():
+        # Zugriff auf das spezifische Detail "prompt"
+        specific_detail = details.get("prompt", "N/A") # "N/A" als Standardwert, falls "prompt" nicht vorhanden ist
+        all_characters.append(f"{character_name}: {specific_detail}")
     
-def addcar(car_name_input,car_description):
-        global car_options, car_input
-        car_options.append((car_name_input, car_description))
+    return "\n".join(all_characters)
+
+## a futuristic Mercedes S-Class with a calm, clean, modern interior
+def addcar(car_name_input, car_choice_input, car_exterior_description, car_interior_description, car_details_input):
+        global car_options
+        car_model = car_choice_input
+        if car_exterior_description == "":
+            car_exterior = ""
+        else:
+            car_exterior = car_exterior_description + " "
+        if car_interior_description == "":
+            car_interior = ""
+        else:
+            car_interior = " with a " + car_interior_description + " interior"
+        if car_details_input == "":
+            details = ""
+        else:
+            details = " and " + car_details_input
+
+        car_prompt ="a " + car_exterior+ car_choice_input + car_interior + details
+
+        ## store values
+        car_details= {
+            "model": car_model,
+            "exterior": car_exterior,
+            "interior": car_interior,
+            "details": details,
+            "prompt": car_prompt
+        }
+        car_options[car_name_input] = car_details
         print("added car")
-        print(car_input.choices)
-        car_input.choices = car_options
-        print(car_input.choices)
-        return car_options, gr.Dropdown(choices=car_options)
+        return update_car_outputlist(car_options)
+
+def update_car_outputlist(car_options):
+    all_cars = []
+    for car_name, prompt in car_options.items():
+        # Zugriff auf das spezifische Detail "prompt"
+        specific_detail = prompt.get("prompt", "N/A") # "N/A" als Standardwert, falls "prompt" nicht vorhanden ist
+        all_cars.append(f"{car_name}: {specific_detail}")
+    
+    return "\n".join(all_cars)
 
 
 ## get selected values
@@ -207,27 +263,27 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
             gr.Markdown("Here you can define options that are generally applicable to all scenes.")
             with gr.Row():
                     with gr.Column():
-                        gr.Markdown("## Persona")
-                        character_choices = gr.TextArea(character_options, label="Characters", info="Available characters to choose from")
-                        with gr.Accordion("Click to create your own Character", open=False, elem_classes=["black-text"]):
-                            character_name_input = gr.Textbox(label="Character Name", placeholder="your character name here", info="Name your character for later reference")
+                        character_choices = gr.TextArea(update_characters_outputlist(character_options), label="Personas", info="Available personas to choose from")
+                        with gr.Accordion("Click to create your own Persona", open=False, elem_classes=["optional-details"]):
+                            character_name_input = gr.Textbox(label="Persona Name", placeholder="your persona name here", info="Name your persona for later reference")
                             character_lookalike_input = gr.Textbox(label="Well-known Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.")
                             character_clothes_input = gr.Textbox(label="Clothing", placeholder=" a red dress", info="What is your Persona wearing?")
                             with gr.Accordion("Optional details", open=False, elem_classes=["black-text"]):
                                  character_age_input = gr.Slider(1, 100, step=1, value=32, interactive=True, label="Age", info="Choose an age between 1 and 100")
-                                 character_height_input = gr.Dropdown(label="Height", info="Choose heigth", choices=["very short", "short", "normal", "tall", "very tall"])
-                                 character_weight_input = gr.Dropdown(label="Weight", info="Choose the weight", choices=["very thin", "thin", "normal", "overweight", "obese"])
+                                 character_height_input = gr.Dropdown(label="Height", info="Choose heigth", choices=["very short", "short", "normal sized", "tall", "very tall"])
+                                 character_weight_input = gr.Dropdown(label="Weight", info="Choose the weight", choices=["very thin", "thin", "normal weigth", "overweight", "obese"])
                                  character_details_input = gr.Textbox(label="Additional details", placeholder="big face tatoo", info="Something Special about your character?")
-                            savecharacter_btn = gr.Button("Save Character")
+                            savecharacter_btn = gr.Button("Save Persona")
             with gr.Row():
                     with gr.Column():
-                        gr.Markdown("## Car")
-                        car_choices = gr.TextArea(car_options, label="Cars", info="Available cars to choose from")
-                        with gr.Accordion("Click to create your own Car", open=False, elem_classes=["black-text"]):
+                        car_choices = gr.TextArea(update_car_outputlist(car_options), label="Cars", info="Available cars to choose from")
+                        with gr.Accordion("Click to create your own Car", open=False, elem_classes=["optional-details"]):
                             car_name_input = gr.Textbox(label="Car Name", placeholder="your car name here", info="Name your custom car for later reference")
-                            car_choice_input =  gr.Radio(["Based on a real world vehicle", "Pick a vehicle class", "Define your own"], label="Vehicle", info="What type of vehicle")
-                            car_exterior_description = gr.Textbox(label="Exterior Describtion", placeholder="futuristic, historic, autonomous", info="Describe your custom car, be specific")
-                            car_interior_description = gr.Textbox(label="Car Describtion", placeholder="your car here", info="Describe your custom car, be specific")
+                            car_choice_input =  gr.Textbox(placeholder="Based on a real world vehicle or pick a vehicle class(4-door sedan, 2-door coupe, Van/wagon, Sports car, Sports utility, Pickup truck) or define your own", label="Vehicle", info="What type of vehicle")
+                            with gr.Accordion("Optional details", open=False, elem_classes=["black-text"]):
+                                car_exterior_description = gr.Textbox(label="Exterior Describtion", placeholder="futuristic, historic, autonomous", info="Describe your custom car, be specific")
+                                car_interior_description = gr.Textbox(label="Interior Describtion", placeholder="calm clean intuitive environment", info="Describe your custom car, be specific")
+                                car_details_input = gr.Textbox(label="Additional details", placeholder="big windows", info="Something special about your car?")
                             savecar_btn = gr.Button("Save Car")
          with gr.Tab(label = "2. Generate Image") as tab2:
             with gr.Row():
@@ -284,7 +340,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
     simple_input.change(changeComplexity, simple_input, detail_cols)
     customcar_input.change(generate_complexcar_prompt, customcar_input, prompt_output)
     savecharacter_btn.click(addcharacter, inputs=[character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input], outputs=character_choices)
-    savecar_btn.click(addcar, inputs=[car_name_input,car_exterior_description], outputs=[car_choices, car_input])
+    savecar_btn.click(addcar, inputs=[car_name_input, car_choice_input, car_exterior_description, car_interior_description, car_details_input], outputs=car_choices)
     
 
 
