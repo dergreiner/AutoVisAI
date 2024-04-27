@@ -14,7 +14,19 @@ mycss = """
 }
 .optional-details {
     color: black !important;
+      
+}
+.accent-grey {
+    color: black !important;
     background-color: LightGrey;
+}
+.required-details {
+    color: black !important;
+    background-color: PeachPuff;
+}
+.button {
+    color: black !important;
+    background-color: Coral;
 }
 .red-text {
     text-decoration-line: underline;
@@ -51,7 +63,7 @@ position_prompt= ""
 shot_description_prompt= ""
 negative_prompt= ""
 actualprompt= ""
-
+allimages = []
 ## define the options for the characters and cars
 character_options = {"Alexa": {"look alike":"looks like Emma Watson", "clothes": "wearing a red dress", "age": "32 years old", "height": "tall", "weight": "normal weight", "details": "gold necklace around her neck", "prompt": "a tall normal weight 32 years old person(looks like Emma Watson) wearing a red dress and gold necklace around her neck"}} 
 car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class","exterior": "futuristic", "interior": "calm, clean, modern", "details": "big windows", "prompt": "a futuristic Mercedes S-Class with a calm, clean, modern interior"}}
@@ -71,9 +83,10 @@ def generateimage(init_image, strength_slider):
         image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
         print("[Model]: Text2Img")
 
+    allimages.append(image)
     print ("[PROMPT]: ", actualprompt)
     print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
-    return image
+    return image, allimages
 
 
 ## add new characters and cars
@@ -86,7 +99,6 @@ def addcharacter(character_name_input, character_lookalike_input, character_clot
         lookalike = "looks like " + character_lookalike_input
         if character_height_input is None:
             height = ""
-            print("height is none")
         else:
             height = str(character_height_input) + " "
 
@@ -112,7 +124,7 @@ def addcharacter(character_name_input, character_lookalike_input, character_clot
         }
         character_options[character_name_input] = character_details
         print("added character")
-        return update_characters_outputlist(character_options)
+        return update_characters_outputlist(character_options), gr.Dropdown(label="Persona", info="Choose the person in the scene", choices=character_options), gr.Dropdown(label="Persona", info="Choose the person in the scene", choices=character_options)
 
 def update_characters_outputlist(character_options):
     all_characters = []
@@ -152,7 +164,7 @@ def addcar(car_name_input, car_choice_input, car_exterior_description, car_inter
         }
         car_options[car_name_input] = car_details
         print("added car")
-        return update_car_outputlist(car_options)
+        return update_car_outputlist(car_options), gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=car_options)
 
 def update_car_outputlist(car_options):
     all_cars = []
@@ -228,17 +240,27 @@ def generate_negative_prompt(negative_prompt_input):
     negative_prompt = negative_prompt_input
     return updateprompt()
 
-## change the complexity of the scene
-def changeComplexity(complexity):
+## change the view
+def changeView(complexity):
         global road_prompt, traffic_prompt, situation_prompt, environment_prompt
-        if complexity == "Complex":
-            return gr.Column(visible=True)
+        if complexity == "Exterior of the vehicle":
+            return gr.Column(visible=True), gr.Column(visible=False) ,gr.Column(visible=False)
+        elif complexity == "Interior of the vehicle":
+            return gr.Column(visible=False), gr.Column(visible=True) ,gr.Column(visible=False)
         else:
             road_prompt = ""
             traffic_prompt = ""
             situation_prompt = ""
             environment_prompt = ""
-            return gr.Column(visible=False)
+            return gr.Column(visible=False),  gr.Column(visible=False) ,gr.Column(visible=True)
+
+
+def changeInt(selection):
+        if selection == "Character Interaction":
+            return gr.Accordion(visible=True), gr.Accordion(visible=False)
+        else:
+            return gr.Accordion(visible=False), gr.Accordion(visible=True)
+
 
 ## update the prompt to currently selected values
 def updateprompt():
@@ -257,34 +279,34 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
     gr.Markdown("## Storyboard Cars")
     with gr.Column():
          infotext = gr.TextArea(value="Welcome to Storyboard for Cars, \n\nYou will generate new frames throughout the program. \n\nEvery time your frame is finished, it will upload to the overview tab. \nThe generation of frames may take some time depending on the performance of the system. Therefore we ask for your patience.\n\nThank you.", interactive=False, show_label=False)
-         start_button = gr.Button("Start")
+         start_button = gr.Button("Start", elem_classes=["button"])
     with gr.Row(visible = False) as generating:
          with gr.Tab(label = "1. Defining Basics",):
             gr.Markdown("Here you can define options that are generally applicable to all scenes.")
             with gr.Row():
                     with gr.Column():
                         character_choices = gr.TextArea(update_characters_outputlist(character_options), label="Personas", info="Available personas to choose from")
-                        with gr.Accordion("Click to create your own Persona", open=False, elem_classes=["optional-details"]):
-                            character_name_input = gr.Textbox(label="Persona Name", placeholder="your persona name here", info="Name your persona for later reference")
-                            character_lookalike_input = gr.Textbox(label="Well-known Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.")
-                            character_clothes_input = gr.Textbox(label="Clothing", placeholder=" a red dress", info="What is your Persona wearing?")
-                            with gr.Accordion("Optional details", open=False, elem_classes=["black-text"]):
-                                 character_age_input = gr.Slider(1, 100, step=1, value=32, interactive=True, label="Age", info="Choose an age between 1 and 100")
-                                 character_height_input = gr.Dropdown(label="Height", info="Choose heigth", choices=["very short", "short", "normal sized", "tall", "very tall"])
-                                 character_weight_input = gr.Dropdown(label="Weight", info="Choose the weight", choices=["very thin", "thin", "normal weigth", "overweight", "obese"])
-                                 character_details_input = gr.Textbox(label="Additional details", placeholder="big face tatoo", info="Something Special about your character?")
-                            savecharacter_btn = gr.Button("Save Persona")
+                        with gr.Accordion("Click to create your own Persona", open=False, elem_classes=["accent-grey"]):
+                            character_name_input = gr.Textbox(label="Persona Name", placeholder="your persona name here", info="Name your persona for later reference", elem_classes=["required-details"])
+                            character_lookalike_input = gr.Textbox(label="Well-known Lookalike", placeholder="your character look alike here", info="To get consistent results, please provide a lookalike of the character, you desire. It should be a celebrity or a well-known person.",  elem_classes=["required-details"])
+                            character_clothes_input = gr.Textbox(label="Clothing", placeholder=" a red dress", info="What is your Persona wearing?", elem_classes=["required-details"])
+                            with gr.Accordion("Optional details", open=False, elem_classes=["optional-details"]):
+                                 character_age_input = gr.Slider(1, 100, step=1, value=32, interactive=True, label="Age", info="Choose an age between 1 and 100", elem_classes=["optional-details"])
+                                 character_height_input = gr.Dropdown(label="Height", info="Choose heigth", choices=["very short", "short", "normal sized", "tall", "very tall"], elem_classes=["optional-details"])
+                                 character_weight_input = gr.Dropdown(label="Weight", info="Choose the weight", choices=["very thin", "thin", "normal weigth", "overweight", "obese"], elem_classes=["optional-details"])
+                                 character_details_input = gr.Textbox(label="Additional details", placeholder="big face tatoo", info="Something Special about your character?", elem_classes=["optional-details"])
+                            savecharacter_btn = gr.Button("Save Persona", elem_classes=["button"])
             with gr.Row():
                     with gr.Column():
                         car_choices = gr.TextArea(update_car_outputlist(car_options), label="Cars", info="Available cars to choose from")
-                        with gr.Accordion("Click to create your own Car", open=False, elem_classes=["optional-details"]):
-                            car_name_input = gr.Textbox(label="Car Name", placeholder="your car name here", info="Name your custom car for later reference")
-                            car_choice_input =  gr.Textbox(placeholder="Based on a real world vehicle or pick a vehicle class(4-door sedan, 2-door coupe, Van/wagon, Sports car, Sports utility, Pickup truck) or define your own", label="Vehicle", info="What type of vehicle")
-                            with gr.Accordion("Optional details", open=False, elem_classes=["black-text"]):
+                        with gr.Accordion("Click to create your own Car", open=False, elem_classes=["accent-grey"]):
+                            car_name_input = gr.Textbox(label="Car Name", placeholder="your car name here", info="Name your custom car for later reference",  elem_classes=["required-details"])
+                            car_choice_input =  gr.Textbox(placeholder="Based on a real world vehicle or pick a vehicle class(4-door sedan, 2-door coupe, Van/wagon, Sports car, Sports utility, Pickup truck) or define your own", label="Vehicle", info="What type of vehicle",  elem_classes=["required-details"])
+                            with gr.Accordion("Optional details", open=False, elem_classes=["optional-details"]):
                                 car_exterior_description = gr.Textbox(label="Exterior Describtion", placeholder="futuristic, historic, autonomous", info="Describe your custom car, be specific")
                                 car_interior_description = gr.Textbox(label="Interior Describtion", placeholder="calm clean intuitive environment", info="Describe your custom car, be specific")
                                 car_details_input = gr.Textbox(label="Additional details", placeholder="big windows", info="Something special about your car?")
-                            savecar_btn = gr.Button("Save Car")
+                            savecar_btn = gr.Button("Save Car", elem_classes=["button"])
          with gr.Tab(label = "2. Generate Image") as tab2:
             with gr.Row():
                 with gr.Column():
@@ -292,35 +314,58 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
                                 with gr.Column():
                                     ##character_input = gr.Dropdown(["Anna", "Max"], multiselect=True, label="Character", info="Who is in the scene?")
                                     gr.Markdown("## Basic Scene Setup")
-                                    img_input = gr.Image()
-                                    strength_slider = gr.Slider(label="Strength",maximum = 1, value = 0.75 , step = 0.10, info="The strength of the img2img effect")
-                                    intext_input =  gr.Radio(["Inside the car", "Outside the car"], label="Scene Positioning", info="Interior or exterior?")
                                     car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=car_options)
-                                    customcar_input = gr.Textbox(label="Custom Car", placeholder="your custom car here", visible=False, info="Describe your custom car, be specific")
-                                    angle_input = gr.Dropdown(["Normal", "Low angle", "High angle", "Close-Up", "Wide"], label="View Angle", info="Choose the View Angle of the scene")
-                                    simple_input = gr.Radio(["Simple", "Complex"], label="Complexity", info="Choose the complexity of the scene")
+                                    simple_input = gr.Radio(["Exterior of the vehicle", "Interior of the vehicle", "Else"], label="Scene Positioning", info="Interior or exterior?")
+                                   
                         with gr.Row():
-                                with gr.Column(visible=False) as detail_cols:
-                                    gr.Markdown("## Defining the scene")
-                                    road_input =  gr.Textbox(label="Road", placeholder="bumpy wet road", info="describes the layout of the road, including markings, topology")
-                                    traffic_input =  gr.Textbox(label="Traffic", placeholder="many other cars", info="defines traffic infrastructures (e.g., traffic signs/lights)")
-                                    situation_input =  gr.Textbox(label="Objects",placeholder="bumpy wet road", info="describes all the objects, their maneuvers, and interactions in a scenario")
-                                    Environment_input =  gr.Textbox(label="Environment", placeholder="sunny weather, sun is bright", info="environmental condition like weather and lighting")
+                                with gr.Column(visible=False) as ext_cols:
+                                    with gr.Accordion("Exterior", open=True, elem_classes=["accent-grey"]):
+                                        scene_input = gr.Textbox(label="Scene", placeholder="forest", info="describes the setting of the scene", elem_classes=["required-details"])
+                                        action_input = gr.Textbox(label="Action", placeholder="driving", info="describes the action of the scene", elem_classes=["required-details"])
+                                        with gr.Accordion("Optional - more details", open=False, elem_classes=["optional-details"]):
+                                            road_input =  gr.Textbox(label="Road", placeholder="bumpy wet road", info="describes the layout of the road, including markings, topology")
+                                            Environment_input =  gr.Textbox(label="Environment", placeholder="sunny weather, sun is bright", info="environmental conditions like weather and lighting")
+                                            traffic_input =  gr.Textbox(label="Traffic", placeholder="many other cars", info="Additional things that are happening? (traffic, other objects and interactions)")
+                                            with gr.Accordion("Is one of your personas visible?", open=False, elem_classes=["black-text"]):
+                                                character_select_ext = gr.Dropdown(label="Persona", interactive=True, info="Choose the person in the scene", choices=character_options)
+                                                character_action_input = gr.Textbox(label="Action", placeholder="walking", info="describes the action of the person")
+                                                character_emotions_input = gr.Textbox(label="Emotions", placeholder="happy", info="describes the emotions of the person")
+                                        ext_details_input = gr.Textbox(label="Additional details", placeholder=" ", info="Something else?")
+                                with gr.Column(visible=False) as int_cols:
+                                    with gr.Accordion("Interior", open=True, elem_classes=["accent-grey"]):
+                                        int_focus_select = gr.Radio(["Character Interaction", "Technical Device"], label="What is the primary point of interest?", info="you only want to map a technical device in the car?")
+                                        with gr.Accordion("Character interaction", open=True, visible=False, elem_classes=["accent-grey"]) as character_accordion:
+                                            character_select_int = gr.Dropdown(label="Persona", interactive=True, info="Choose the person in the scene", choices=character_options)
+                                            character_action_input = gr.Textbox(label="Action", placeholder="walking", info="describes the action of the person")
+                                            with gr.Accordion("Optional - more details", open=False, elem_classes=["optional-details"]):
+                                                character_emotions_input = gr.Textbox(label="Emotions", placeholder="angry/happy/sad/excited", info="describes the emotions of the person. the person is ...")
+                                                character_sitting_input = gr.Textbox(label="Place", placeholder="drivers seat/backseat", info="Where does the character sit?")
+                                        with gr.Accordion("Technical Device", open=True, visible=False, elem_classes=["accent-grey"]) as device_accordion:
+                                             device_describition_input = gr.Textbox(label="Describe the Device", placeholder=" futuristic dashboard ", info="Describe the Device (HUD, Dashboard, Steering Wheel, Windshield, Center Stack, Handheld, wearable, Brake)")
+                                        int_details_input = gr.Textbox(label="Additional details", placeholder=" ", info="Something else?")
+                                with gr.Column(visible=False) as else_cols:
+                                    gr.Markdown("## Else")
+                                    else_prompt_input =  gr.Textbox(label="Scene Describtion", placeholder="Paris at night", info="Give a description, what you want to visualize!")
+                                    
                         with gr.Row():
                                 with gr.Column():
-                                    gr.Markdown("## Optimizing")
-                                    prompt_input = gr.Textbox(lines=3, label="Shot Description", placeholder="your prompt here")
-                                    negative_prompt_input = gr.Textbox(lines=3, label="What do you want to avoid?", placeholder="your negative prompt here")
-                                    generate_button = gr.Button("Generate Image")
+                                    gr.Markdown("## Finetuning")
+                                    with gr.Accordion("Optimizing", open=False, elem_classes=["black-text"]):
+                                        img_input = gr.Image()
+                                        strength_slider = gr.Slider(label="Strength",maximum = 1, value = 0.75 , step = 0.10, info="The strength of the img2img effect")
+                                        angle_input = gr.Dropdown(["Normal", "Low angle", "High angle", "Close-Up", "Wide"], label="View Angle", info="Choose the View Angle of the scene")
+                                        prompt_input = gr.Textbox(lines=3, label="Shot Description", placeholder="your prompt here")
+                                        negative_prompt_input = gr.Textbox(lines=3, label="What do you want to avoid?", placeholder="your negative prompt here")
+                                    generate_button = gr.Button("Generate Image", elem_classes=["button"])
                 with gr.Column():
                     image_output = gr.Image()
                     prompt_output = gr.TextArea(value=actualprompt, interactive=False, show_label=False)
          with gr.Tab(label = "Storyboard Overview") as tab3:
             gr.Markdown("## 3. Storyboard Overview")
-            gallery = gr.Gallery(label="Generated images", show_label=False)
-            image2_output = gr.Image()
+            gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery", columns=[3], rows=[1], object_fit="contain", height="auto")
+            
     start_button.click(fn=showmenu, inputs=[], outputs=[generating, start_button, infotext])
-    generate_button.click(fn=generateimage, inputs=[img_input, strength_slider], outputs=[image_output])
+    generate_button.click(fn=generateimage, inputs=[img_input, strength_slider], outputs=[image_output, gallery])
 
     
         
@@ -328,19 +373,19 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
     #dynamic update of the prompt
     ##character_input.change(generate_character_prompt, character_input, prompt_output)
     prompt_input.change(generate_shot_description_prompt, prompt_input, prompt_output)
-    car_input.change(generate_car_prompt, car_input, [prompt_output, customcar_input])
+    car_input.change(generate_car_prompt, car_input, [prompt_output])
     angle_input.change(generate_angle_prompt, angle_input, prompt_output)
-    intext_input.change(generate_position_prompt, intext_input, prompt_output)
+    ##intext_input.change(generate_position_prompt, intext_input, prompt_output)
     negative_prompt_input.change(generate_negative_prompt, negative_prompt_input, prompt_output)
     prompt_input.change(generate_shot_description_prompt, prompt_input, prompt_output)
     road_input.change(generate_road_prompt, road_input, prompt_output)
     traffic_input.change(generate_traffic_prompt, traffic_input, prompt_output)
-    situation_input.change(generate_situation_prompt, situation_input, prompt_output)
+    ##situation_input.change(generate_situation_prompt, situation_input, prompt_output)
     Environment_input.change(generate_environment_prompt, Environment_input, prompt_output)
-    simple_input.change(changeComplexity, simple_input, detail_cols)
-    customcar_input.change(generate_complexcar_prompt, customcar_input, prompt_output)
-    savecharacter_btn.click(addcharacter, inputs=[character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input], outputs=character_choices)
-    savecar_btn.click(addcar, inputs=[car_name_input, car_choice_input, car_exterior_description, car_interior_description, car_details_input], outputs=car_choices)
+    simple_input.change(changeView, simple_input, outputs=[ext_cols, int_cols,else_cols])
+    int_focus_select.change(changeInt, int_focus_select, outputs=[character_accordion, device_accordion])
+    savecharacter_btn.click(addcharacter, inputs=[character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input], outputs=[character_choices, character_select_ext, character_select_int])
+    savecar_btn.click(addcar, inputs=[car_name_input, car_choice_input, car_exterior_description, car_interior_description, car_details_input], outputs=[car_choices, car_input])
     
 
 
