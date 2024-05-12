@@ -6,7 +6,7 @@ import torch
 from torch import autocast
 import gradio as gr 
 from diffusers.utils import make_image_grid, load_image
-
+from PIL import Image 
 
 mycss = """
 .black-text {
@@ -14,7 +14,7 @@ mycss = """
 }
 .optional-details {
     color: black !important;
-      
+
 }
 .accent-grey {
     color: black !important;
@@ -32,6 +32,7 @@ mycss = """
    color: Coral !important;
 }
 """
+torch.cuda.empty_cache()
 
 model_id1 = "runwayml/stable-diffusion-v1-5"
 model_id2 = "dreamlike-art/dreamlike-diffusion-1.0"
@@ -39,11 +40,10 @@ model_id3 = "stabilityai/stable-diffusion-2"
 model_id4 = "SG161222/Realistic_Vision_V5.1_noVAE"
 model_id5 = "stabilityai/stable-diffusion-xl-base-1.0"
 
-torch.cuda.empty_cache()
 
-pipeline = AutoPipelineForText2Image.from_pretrained(model_id1, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
+pipeline = AutoPipelineForText2Image.from_pretrained(model_id1, torch_dtype=torch.float16, variant="fp16", use_safetensors=True)
 pipeline.to("cuda")
-pipelineImg2Img= AutoPipelineForImage2Image.from_pipe(pipeline)
+pipelineImg2Img= AutoPipelineForImage2Image.from_pipe(pipeline).to("cuda")
 pipelineImg2Img.to("cuda")
 
 
@@ -86,11 +86,13 @@ car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class","exterior": "fut
 
 ## generate the image , guidance_scale=7.5,  width=1064, height=608
 def generateimage(init_image, strength_slider):
-    url = "https://global.discourse-cdn.com/hellohellohello/original/3X/c/1/c1f3e18330ce1273809da41d16a634d7becdd420.jpeg"
     
     actualnegativeprompt= negative_prompt + ""
     if init_image is not None:
-        image = pipelineImg2Img(prompt = actualprompt, image=init_image, strength=strength_slider, guidance_scale=10.5).images[0]
+        
+        init_image_convert = Image.fromarray(init_image).convert("L")
+        init_image_resize = init_image_convert.resize((1064, 608), Image.LANCZOS)
+        image = pipelineImg2Img(prompt = actualprompt, image=init_image_resize, strength=strength_slider, guidance_scale=10.5, width=1064, height=608).images[0]
         print("[Model]: Img2Img")
         print("Strength: " + str(strength_slider))
     else:
@@ -146,7 +148,7 @@ def update_characters_outputlist(character_options):
         # Zugriff auf das spezifische Detail "prompt"
         specific_detail = details.get("prompt", "N/A") # "N/A" als Standardwert, falls "prompt" nicht vorhanden ist
         all_characters.append(f"{character_name}: {specific_detail}")
-    
+
     return "\n".join(all_characters)
 
 ## a futuristic Mercedes S-Class with a calm, clean, modern interior
@@ -186,7 +188,7 @@ def update_car_outputlist(car_options):
         # Zugriff auf das spezifische Detail "prompt"
         specific_detail = prompt.get("prompt", "N/A") # "N/A" als Standardwert, falls "prompt" nicht vorhanden ist
         all_cars.append(f"{car_name}: {specific_detail}")
-    
+
     return "\n".join(all_cars)
 
 
@@ -264,7 +266,7 @@ def generate_emotions_prompt(character_emotions_input):
     if character_emotions_input == "":
         character_emotions_prompt = ""
     else:
-        character_emotions_prompt =  character_emotions_input
+        character_emotions_prompt =  character_emotions_input + " "
     return updateprompt()
 
 # interior set values
@@ -334,12 +336,35 @@ def generate_negative_prompt(negative_prompt_input):
     negative_prompt = negative_prompt_input
     return updateprompt()
 
+def deleteAttributes():
+    global ext_scene_prompt, ext_action_prompt, ext_road_prompt, ext_environment_prompt, ext_traffic_prompt, ext_details_prompt, character_select_prompt, character_action_prompt, character_emotions_prompt, int_character_sitting_prompt, int_device_describition_prompt, int_details_prompt, else_prompt, view_selection, car_select_prompt, angle_prompt, shot_description_prompt, negative_prompt, actualprompt
+    ext_scene_prompt = ""
+    ext_action_prompt = ""
+    ext_road_prompt = ""
+    ext_environment_prompt = ""
+    ext_traffic_prompt = ""
+    ext_details_prompt = ""
+    character_select_prompt = ""
+    character_action_prompt = ""
+    character_emotions_prompt = ""
+    int_character_sitting_prompt = ""
+    int_device_describition_prompt = ""
+    int_details_prompt = ""
+    else_prompt = ""
+    view_selection = ""
+    car_select_prompt = ""
+    angle_prompt = ""
+    shot_description_prompt = ""
+    negative_prompt = ""
+    actualprompt = ""
+
+
 ## change the view
 def changeView(complexity):
-        global view_selection, actualprompt, character_select_prompt
-        actualprompt= ""
-        character_select_prompt = ""
-        if complexity == "Exterior of the vehicle": 
+        global view_selection, actualprompt
+        deleteAttributes()
+
+        if complexity == "Exterior of the vehicle":
             print("exterior")
             view_selection= "Exterior of the vehicle"
             actualprompt= ""
@@ -369,13 +394,15 @@ def updateprompt():
     global actualprompt
 
     if view_selection == "Exterior of the vehicle":
-        
+
         actualprompt= "A " + angle_prompt + " monochrome minimalistic sketch" + " of " + car_options[car_select_prompt]["exterior"] +" " + car_options[car_select_prompt]["model"] + details_car_prompt + " "+  ext_action_prompt + ext_scene_prompt + ext_road_prompt + ext_environment_prompt + ext_traffic_prompt + ", "+ character_select_prompt + character_action_prompt + character_emotions_prompt + ext_details_prompt + else_prompt + " , sketch, monochrome, cinematic, cinematic light"
     elif view_selection == "Interior of the vehicle":
-        
-        actualprompt= "A " + angle_prompt + " monochrome minimalistic sketch" + " of a " + character_emotions_prompt + character_select_prompt + character_action_prompt + "a " + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + int_character_sitting_prompt + int_device_describition_prompt + int_details_prompt + else_prompt + " , sketch, monochrome, cinematic, cinematic light"
+        if  int_focus_select == "Character Interaction":
+            actualprompt= "A " + angle_prompt + " monochrome minimalistic sketch" + " of a " + character_emotions_prompt + character_select_prompt + character_action_prompt + "a " + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + int_character_sitting_prompt + int_device_describition_prompt + int_details_prompt + else_prompt + " , sketch, monochrome, cinematic, cinematic light"
+        else:
+            actualprompt= "A " + angle_prompt + " monochrome minimalistic sketch" + " of a " + int_device_describition_prompt + int_details_prompt + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + else_prompt + " , sketch, monochrome, cinematic, cinematic light"
     else:
-        actualprompt= else_prompt 
+         actualprompt= else_prompt
         ##actualprompt= "a monochrome minimalistic sketch, " + else_prompt + ", cinematic, cinematic light"
     return actualprompt
 
@@ -426,7 +453,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
                                     gr.Markdown("## Basic Scene Setup")
                                     car_input = gr.Dropdown(label="Car Type", info="Choose the type of car in the scene", choices=car_options)
                                     simple_input = gr.Radio(["Exterior of the vehicle", "Interior of the vehicle", "Else"], label="Scene Positioning", info="Interior or exterior?")
-                                   
+
                         with gr.Row():
                                 with gr.Column(visible=False) as ext_cols:
                                     with gr.Accordion("Exterior", open=True, elem_classes=["accent-grey"]):
@@ -448,14 +475,14 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
                                             character_select_int = gr.Dropdown(label="Persona*", interactive=True, info="Choose the person in the scene", choices=character_options)
                                             character_action_input_int = gr.Textbox(label="Action*", placeholder="sitting in the drivers seat", info="describes the action of the person")
                                             character_emotions_input_int = gr.Textbox(label="Emotions", placeholder="angry/happy/sad/excited", info="describes the emotions of the person. the person is ...")
-                                                
+
                                         with gr.Accordion("Technical Device", open=True, visible=False) as device_accordion:
                                              device_describition_input = gr.Textbox(label="Describe the Device*", placeholder=" futuristic dashboard ", info="Describe the Device (HUD, Dashboard, Steering Wheel, Windshield, Center Stack, Handheld, wearable, Brake)", elem_classes=["required-details"])
                                         int_details_input = gr.Textbox(label="Additional details", placeholder=" ", info="Something else?")
                                 with gr.Column(visible=False) as else_cols:
                                     with gr.Accordion("Else", open=True, elem_classes=["accent-grey"]) as else_accordion:
                                         else_prompt_input =  gr.Textbox(label="Scene Describtion*", placeholder="Paris at night", info="Give a description, what you want to visualize!")
-                                    
+
                         with gr.Row():
                                 with gr.Column():
                                     with gr.Accordion("Finetuning", open=False, elem_classes=["accent-grey"]):
@@ -470,12 +497,12 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
                     prompt_output = gr.TextArea(value=actualprompt, interactive=False, show_label=False)
          with gr.Tab(label = "Storyboard Overview") as tab3:
             gr.Markdown("## 3. Storyboard Overview")
-            gallery = gr.Gallery(label="Generated images", show_label=True, elem_id="gallery", columns=[3], rows=[1], object_fit="contain", height="auto")
-            
-    
+            gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery", columns=[3], rows=[1], object_fit="contain", height="auto")
 
-    
-        
+
+
+
+
     #functions for the dropdowns
     simple_input.change(changeView, simple_input, outputs=[ext_cols, int_cols, else_cols])
     int_focus_select.change(changeInt, int_focus_select, outputs=[character_accordion, device_accordion])
@@ -483,10 +510,10 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
     # Finetuining
     negative_prompt_input.change(generate_negative_prompt, negative_prompt_input, prompt_output)
     angle_input.change(generate_angle_prompt, angle_input, prompt_output)
-    
+
 
     ##character_input.change(generate_character_prompt, character_input, prompt_output)
-   
+
 
     # select the car
     car_input.change(generate_car_prompt, car_input, [prompt_output])
@@ -494,7 +521,7 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
     #exterior car
     scene_input.change(generate_scene_prompt, scene_input, prompt_output)
     action_input.change(generate_car_action_prompt, action_input, prompt_output)
-    
+
     road_input.change(generate_road_prompt, road_input, prompt_output)
     Environment_input.change(generate_environment_prompt, Environment_input, prompt_output)
     traffic_input.change(generate_traffic_prompt, traffic_input, prompt_output)
@@ -507,13 +534,13 @@ with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) a
     character_select_int.change(generate_character_prompt, character_select_int, prompt_output)
     character_action_input_int.change(generate_action_prompt, character_action_input_int, prompt_output)
     character_emotions_input_int.change(generate_emotions_prompt, character_emotions_input_int, prompt_output)
-    
+
     device_describition_input.change(generate_device_prompt, device_describition_input, prompt_output)
     int_details_input.change(generate_int_details_prompt, int_details_input, prompt_output)
 
     # else
     else_prompt_input.change(generate_else_prompt, else_prompt_input, prompt_output)
-                                   
+
     # Buttons
     savecharacter_btn.click(addcharacter, inputs=[character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input], outputs=[character_choices, character_select_ext, character_select_int])
     savecar_btn.click(addcar, inputs=[car_name_input, car_choice_input, car_exterior_description, car_interior_description, car_details_input], outputs=[car_choices, car_input])
