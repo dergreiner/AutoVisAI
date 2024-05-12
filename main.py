@@ -9,6 +9,9 @@ from diffusers.utils import make_image_grid, load_image
 from PIL import Image 
 
 mycss = """
+.font-size {    
+    font-size: 20px !important;
+}
 .black-text {
     color: black !important;
 }
@@ -412,7 +415,7 @@ def showmenu():
 
 
 
-with gr.Blocks(title="Storyboard Cars", theme="gstaff/xkcd@=0.0.4", css=mycss) as demo:
+with gr.Blocks(title="Storyboard Cars", theme='gradio/monochrome', css=mycss) as demo:
     gr.Markdown("## Storyboard Cars")
     with gr.Column():
          infotext = gr.TextArea(value="Welcome to Storyboard for Cars, \n\nYou will generate new frames throughout the program. \n\nEvery time your frame is finished, it will upload to the overview tab. \nThe generation of frames may take some time depending on the performance of the system. Therefore we ask for your patience.\n\nThank you.", interactive=False, show_label=False)
