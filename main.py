@@ -86,14 +86,14 @@ actualprompt= ""
 allimages = []
 ## define the options for the characters and cars
 character_options = {"Alexa": {"look alike":"looks like Emma Watson", "clothes": "wearing a dress", "age": "32 years old", "height": "tall", "weight": "normal weight", "details": "open hair", "prompt": "tall normal weight 32 years old person(looks like Emma Watson) wearing a dress and open hair"}, None: {"look alike": "looks like", "clothes": "wearing", "age": " years old", "height": "", "weight": "", "details": "", "prompt": ""} }
-car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class","exterior": "futuristic", "interior": "calm, clean, modern", "details": "", "prompt": "a futuristic Mercedes S-Class limousine with a calm, clean, modern interior"}}
+car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class Coupe","exterior": "futuristic", "interior": "calm, clean, modern", "details": "", "prompt": "a futuristic Mercedes S-Class limousine with a calm, clean, modern interior"}}
 unhappytxt= "Search for a reference image on the web that has a composition you like and upload it."
 
 
 ## generate the image , guidance_scale=7.5,  width=1064, height=608
 def generateimage(init_image, strength_slider):
     
-    actualnegativeprompt= negative_prompt + ""
+    actualnegativeprompt= "(((colors))), " + negative_prompt
     if init_image is not None:
         strength= float(strength_slider)/10 + 0.5
         init_image_convert = Image.fromarray(init_image).convert("L")
@@ -407,17 +407,17 @@ def updateprompt():
 
     if view_selection == "Exterior of the vehicle":
         showedprompt= car_options[car_select_prompt]["exterior"] +" " + car_options[car_select_prompt]["model"] + details_car_prompt + " "+  ext_action_prompt + ext_scene_prompt + ext_road_prompt + ext_environment_prompt + ext_traffic_prompt + character_select_prompt + character_action_prompt + character_emotions_prompt + ext_details_prompt + else_prompt
-        actualprompt= "A " + angle_prompt + " monochrome minimalistic sketch" + " of " + showedprompt + " , sketch, monochrome, cinematic, cinematic light"
+        actualprompt= "A " + angle_prompt + " (((monochrome minimalistic sketch)))" + " of " + showedprompt + " , sketch, monochrome, cinematic, cinematic light"
     elif view_selection == "Interior of the vehicle":
         if  int_focus_select == "Character Interaction":
             showedprompt = character_emotions_prompt + character_select_prompt + character_action_prompt + "a " + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + int_character_sitting_prompt + int_device_describition_prompt + int_details_prompt + else_prompt
-            actualprompt= "A " + angle_prompt + " monochrome minimalistic sketch" + " of a " + showedprompt + " , sketch, monochrome, cinematic, cinematic light"
+            actualprompt= "A " + angle_prompt + " (((monochrome minimalistic sketch)))" + " of a " + showedprompt + " , sketch, monochrome, cinematic, cinematic light"
         else:
             showedprompt= int_device_describition_prompt + int_details_prompt + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + else_prompt 
-            actualprompt= "A " + angle_prompt + " monochrome minimalistic sketch" + " of a " +  showedprompt + " , sketch, monochrome, cinematic, cinematic light"
+            actualprompt= "A " + angle_prompt + " (((monochrome minimalistic sketch)))" + " of a " +  showedprompt + " , sketch, monochrome, cinematic, cinematic light"
     else:
         showedprompt = else_prompt
-        actualprompt= "a monochrome minimalistic sketch, " + showedprompt + ", cinematic, cinematic light"
+        actualprompt= "a (((monochrome minimalistic sketch))), " + showedprompt + ", sketch, monochrome, cinematic, cinematic light"
     return showedprompt
 
 ## show the tabs

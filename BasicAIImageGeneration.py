@@ -83,14 +83,14 @@ actualprompt= ""
 allimages = []
 ## define the options for the characters and cars
 character_options = {"Alexa": {"look alike":"looks like Emma Watson", "clothes": "wearing a dress", "age": "32 years old", "height": "tall", "weight": "normal weight", "details": "open hair", "prompt": "tall normal weight 32 years old person(looks like Emma Watson) wearing a dress and open hair"}, None: {"look alike": "looks like", "clothes": "wearing", "age": " years old", "height": "", "weight": "", "details": "", "prompt": ""} }
-car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class","exterior": "futuristic", "interior": "calm, clean, modern", "details": "big windows", "prompt": "a futuristic Mercedes S-Class with a calm, clean, modern interior"}}
+car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class Coupe","exterior": "futuristic", "interior": "calm, clean, modern", "details": "big windows", "prompt": "a futuristic Mercedes S-Class with a calm, clean, modern interior"}}
 
 
 
 ## generate the image , guidance_scale=7.5,  width=1064, height=608
 def generateimage(init_image, strength_slider):
     
-    actualnegativeprompt= negative_prompt + ""
+    actualnegativeprompt= "(((colors))), " + negative_prompt
     if init_image is not None:
         
         init_image_convert = Image.fromarray(init_image).convert("L")
