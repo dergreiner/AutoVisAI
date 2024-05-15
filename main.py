@@ -94,7 +94,7 @@ def generateimage(init_image, strength_slider):
     if init_image is not None:
         
         init_image_convert = Image.fromarray(init_image).convert("L")
-        init_image_resize = init_image_convert.resize((1064, 608), Image.LANCZOS)
+        init_image_resize = init_image_convert.resize((1064, 608), Image.LANCZOS).convert("RGB")
         image = pipelineImg2Img(prompt = actualprompt, image=init_image_resize, strength=strength_slider, guidance_scale=10.5, width=1064, height=608).images[0]
         print("[Model]: Img2Img")
         print("Strength: " + str(strength_slider))
@@ -354,8 +354,6 @@ def deleteAttributes():
     int_device_describition_prompt = ""
     int_details_prompt = ""
     else_prompt = ""
-    view_selection = ""
-    car_select_prompt = ""
     angle_prompt = ""
     shot_description_prompt = ""
     negative_prompt = ""
@@ -385,10 +383,13 @@ def changeView(complexity):
 
 
 def changeInt(selection):
+        global int_focus_select
         if selection == "Character Interaction":
+            int_focus_select= "Character Interaction"
             return gr.Accordion(visible=True), gr.Accordion(visible=False)
         else:
             print("Device")
+            int_focus_select = "Device"
             return gr.Accordion(visible=False), gr.Accordion(visible=True)
 
 
