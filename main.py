@@ -407,17 +407,17 @@ def updateprompt():
 
     if view_selection == "Exterior of the vehicle":
         showedprompt= car_options[car_select_prompt]["exterior"] +" " + car_options[car_select_prompt]["model"] + details_car_prompt + " "+  ext_action_prompt + ext_scene_prompt + ext_road_prompt + ext_environment_prompt + ext_traffic_prompt + character_select_prompt + character_action_prompt + character_emotions_prompt + ext_details_prompt + else_prompt
-        actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
+        actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle"
     elif view_selection == "Interior of the vehicle":
         if  int_focus_select == "Character Interaction":
             showedprompt = character_emotions_prompt + character_select_prompt + character_action_prompt + "a " + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + int_character_sitting_prompt + int_device_describition_prompt + int_details_prompt + else_prompt
-            actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of a " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
+            actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of a " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle"
         else:
             showedprompt= int_device_describition_prompt + int_details_prompt + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + else_prompt
-            actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of a " +  showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
+            actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of a " +  showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle"
     else:
         showedprompt = else_prompt
-        actualprompt= "a (monochrome minimalistic sketch:1.5), " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
+        actualprompt= "a (monochrome minimalistic sketch:1.5), " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle"
         
     return showedprompt
 
