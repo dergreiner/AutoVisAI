@@ -47,7 +47,7 @@ model_id4 = "SG161222/Realistic_Vision_V5.1_noVAE"
 model_id5 = "stabilityai/stable-diffusion-xl-base-1.0"
 
 
-pipeline = AutoPipelineForText2Image.from_pretrained(model_id1, torch_dtype=torch.float16, variant="fp16", use_safetensors=True)
+pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True)
 pipeline.to("cuda")
 pipelineImg2Img= AutoPipelineForImage2Image.from_pipe(pipeline).to("cuda")
 pipelineImg2Img.to("cuda")
@@ -106,7 +106,7 @@ def generateimage(init_image, strength_slider):
         print("[Model]: Text2Img")
         
 
-    allimages.append((image, actualprompt))
+    allimages.append((image, showedprompt))
     print ("[PROMPT]: ", actualprompt)
     print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
     return image, allimages
@@ -407,17 +407,18 @@ def updateprompt():
 
     if view_selection == "Exterior of the vehicle":
         showedprompt= car_options[car_select_prompt]["exterior"] +" " + car_options[car_select_prompt]["model"] + details_car_prompt + " "+  ext_action_prompt + ext_scene_prompt + ext_road_prompt + ext_environment_prompt + ext_traffic_prompt + character_select_prompt + character_action_prompt + character_emotions_prompt + ext_details_prompt + else_prompt
-        actualprompt= "A " + angle_prompt + " (((monochrome minimalistic sketch)))" + " of " + showedprompt + " , sketch, monochrome, cinematic, cinematic light"
+        actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
     elif view_selection == "Interior of the vehicle":
         if  int_focus_select == "Character Interaction":
             showedprompt = character_emotions_prompt + character_select_prompt + character_action_prompt + "a " + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + int_character_sitting_prompt + int_device_describition_prompt + int_details_prompt + else_prompt
-            actualprompt= "A " + angle_prompt + " (((monochrome minimalistic sketch)))" + " of a " + showedprompt + " , sketch, monochrome, cinematic, cinematic light"
+            actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of a " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
         else:
-            showedprompt= int_device_describition_prompt + int_details_prompt + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + else_prompt 
-            actualprompt= "A " + angle_prompt + " (((monochrome minimalistic sketch)))" + " of a " +  showedprompt + " , sketch, monochrome, cinematic, cinematic light"
+            showedprompt= int_device_describition_prompt + int_details_prompt + car_options[car_select_prompt]["model"] + " with a "+ car_options[car_select_prompt]["interior"]+ " interior"  + else_prompt
+            actualprompt= "A " + angle_prompt + " (monochrome minimalistic sketch:1.5)" + " of a " +  showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
     else:
         showedprompt = else_prompt
-        actualprompt= "a (((monochrome minimalistic sketch))), " + showedprompt + ", sketch, monochrome, cinematic, cinematic light"
+        actualprompt= "a (monochrome minimalistic sketch:1.5), " + showedprompt + ", sketch, monochrome, storyboard, cinematic, cinematic light, storyboard artstyle, trending on artstation"
+        
     return showedprompt
 
 ## show the tabs
@@ -426,8 +427,8 @@ def showmenu():
 
 
 
-with gr.Blocks(title="Storyboard Cars", theme='gradio/monochrome', css=mycss) as demo:
-    gr.Markdown("## Storyboard Cars")
+with gr.Blocks(title="AutoVisGan", theme='gradio/monochrome', css=mycss) as demo:
+    gr.Markdown("## AutoVisGan")
     with gr.Column():
          infotext = gr.TextArea(value="Welcome to Storyboard for Cars, \n\nYou will generate new frames throughout the program. \n\nEvery time your frame is finished, it will upload to the overview tab. \nThe generation of frames may take some time depending on the performance of the system. Therefore we ask for your patience.\n\nThank you.", interactive=False, show_label=False)
          start_button = gr.Button("Start", elem_classes=["button"])
