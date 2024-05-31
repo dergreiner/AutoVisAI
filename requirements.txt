@@ -1,6 +1,8 @@
 --find-links https://download.pytorch.org/whl/torch_stable.html
 
-torch>=2.1.2cu117
-#torch==2.1.2cu117 or +cu118 # depending on your CUDA version, find out via nvcc -V
-diffusers>=0.25.0
-transformers>=4.36.2
+transformers
+accelerate
+scipy
+xformers
+gradio
+git+https://github.com/huggingface/diffusers.git
