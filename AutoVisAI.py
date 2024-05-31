@@ -8,6 +8,7 @@ import gradio as gr
 from diffusers.utils import make_image_grid, load_image
 from PIL import Image 
 
+# css code for the gradio interface
 mycss = """
 .font-size {    
     font-size: 20px !important;
@@ -40,20 +41,21 @@ mycss = """
 """
 torch.cuda.empty_cache()
 
+# load the models, depending on your system you have to switch from Stable Diffusion XL
 model_id1 = "runwayml/stable-diffusion-v1-5"
 model_id2 = "dreamlike-art/dreamlike-diffusion-1.0"
 model_id3 = "stabilityai/stable-diffusion-2"
 model_id4 = "SG161222/Realistic_Vision_V5.1_noVAE"
 model_id5 = "stabilityai/stable-diffusion-xl-base-1.0"
 
-
+# pipeline for text to image & image to Image
 pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True)
 pipeline.to("cuda")
 pipelineImg2Img= AutoPipelineForImage2Image.from_pipe(pipeline).to("cuda")
 pipelineImg2Img.to("cuda")
 
 
-#exterior
+#exterior set values
 ext_scene_prompt = ""
 ext_action_prompt = ""
 ext_road_prompt = ""
@@ -61,51 +63,55 @@ ext_environment_prompt= ""
 ext_traffic_prompt= ""
 ext_details_prompt= ""
 
-#character
+#character set values
 character_select_prompt= ""
 character_action_prompt= ""
 character_emotions_prompt= ""
 
-#interior
+#interior set values
 int_character_sitting_prompt= ""
 int_device_describition_prompt= ""
 int_details_prompt= ""
 
-#else
+#else set values
 else_prompt= ""
 
-# general
+# general set values
 view_selection= ""
 car_select_prompt= ""
 angle_prompt= ""
 shot_description_prompt= ""
 negative_prompt= ""
-
 showedprompt= ""
 actualprompt= ""
 allimages = []
-## define the options for the characters and cars
+
+## character and car bibliotheque
+## define the options for the characters and cars 
 character_options = {"Alexa": {"look alike":"looks like Emma Watson", "clothes": "wearing a dress", "age": "32 years old", "height": "tall", "weight": "normal weight", "details": "open hair", "prompt": "tall normal weight 32 years old person(looks like Emma Watson) wearing a dress and open hair"}, None: {"look alike": "looks like", "clothes": "wearing", "age": " years old", "height": "", "weight": "", "details": "", "prompt": ""} }
 car_options = {"Mercedes S-Class": {"model": "Merdeces S-Class Coupe","exterior": "futuristic", "interior": "calm, clean, modern", "details": "", "prompt": "a futuristic Mercedes S-Class limousine with a calm, clean, modern interior"}}
 unhappytxt= "Search for a reference image on the web that has a composition you like and upload it."
 
 
-## generate the image , guidance_scale=7.5,  width=1064, height=608
+## generate the image , guidance_scale=10.5,  width=1064, height=608
 def generateimage(init_image, strength_slider):
-    
+
     actualnegativeprompt= "(((colors))), " + negative_prompt
+    ## check if an image is uploaded
     if init_image is not None:
         strength= float(strength_slider)/10 + 0.5
+        ## convert the image to grayscale and resize it
         init_image_convert = Image.fromarray(init_image).convert("L")
         init_image_resize = init_image_convert.resize((1064, 608), Image.LANCZOS).convert("RGB")
         image = pipelineImg2Img(prompt = actualprompt, image=init_image_resize, strength=strength, guidance_scale=10.5, width=1064, height=608).images[0]
         print("[Model]: Img2Img")
         print("[Strength]: " + str(strength))
     else:
+        ## generate the image
         image = pipeline(prompt = actualprompt, negative_prompt= negative_prompt, width=1064, height=608).images[0]
         print("[Model]: Text2Img")
         
-
+    ## append the image to the list for the storyboard overview
     allimages.append((image, showedprompt))
     print ("[PROMPT]: ", actualprompt)
     print ("[NEGATIVE_PROMPT]: ", actualnegativeprompt)
@@ -113,7 +119,6 @@ def generateimage(init_image, strength_slider):
 
 
 ## add new characters and cars
-
 def addcharacter(character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input):
         global character_options, character_choices
         ## get values
@@ -161,7 +166,7 @@ def update_characters_outputlist(character_options):
 
     return "\n".join(all_characters)
 
-## a futuristic Mercedes S-Class with a calm, clean, modern interior
+## a car to the bibliotheque and set car prompt values
 def addcar(car_name_input, car_choice_input, car_exterior_description, car_interior_description, car_details_input):
         global car_options
         car_model = car_choice_input
@@ -202,7 +207,7 @@ def update_car_outputlist(car_options):
     return "\n".join(all_cars)
 
 
-#exterior set values
+#exterior set prompt values
 def generate_scene_prompt(scene_input):
     global ext_scene_prompt
     if scene_input == "":
@@ -251,7 +256,7 @@ def generate_ext_details_prompt(ext_details_input):
         ext_details_prompt = ", " + ext_details_input
     return updateprompt()
 
-#character
+#character set prompt values
 def generate_character_prompt(character_select):
     global character_select_prompt
     if str(character_select) == "None":
@@ -279,7 +284,7 @@ def generate_emotions_prompt(character_emotions_input):
         character_emotions_prompt =  character_emotions_input + " "
     return updateprompt()
 
-# interior set values
+# interior set prompt values
 
 def generate_sitting_prompt(character_sitting_input):
     global int_character_sitting_prompt
@@ -305,7 +310,7 @@ def generate_int_details_prompt(int_details_input):
         int_details_prompt = ", " + int_details_input
     return updateprompt()
 
-# else set values
+# else set prompt values
 def generate_else_prompt(else_prompt_input):
     global else_prompt
     if else_prompt_input == "":
@@ -314,7 +319,7 @@ def generate_else_prompt(else_prompt_input):
         else_prompt = else_prompt_input
     return updateprompt()
 
-# general set values
+# general set prompt values
 def generate_car_prompt(car_input):
     global car_select_prompt, details_car_prompt
     car_select_prompt = car_input
@@ -368,7 +373,7 @@ def deleteAttributes():
     showedprompt = ""
 
 
-## change the view
+## change the view based on scene type: exterior, interior or else
 def changeView(complexity):
         global view_selection, actualprompt
         deleteAttributes()
@@ -389,7 +394,7 @@ def changeView(complexity):
             actualprompt= ""
             return gr.Column(visible=False),  gr.Column(visible=False) ,gr.Column(visible=True)
 
-
+## change the focus of the interior view: character interaction or technical device
 def changeInt(selection):
         global int_focus_select
         if selection == "Character Interaction":
@@ -401,7 +406,7 @@ def changeInt(selection):
             return gr.Accordion(visible=False), gr.Accordion(visible=True)
 
 
-## update the prompt to currently selected values
+## update the prompt to currently selected values and view
 def updateprompt():
     global actualprompt, showedprompt
 
@@ -426,7 +431,7 @@ def showmenu():
     return gr.Row(visible=True), gr.Button(visible=False), gr.TextArea(visible=False)
 
 
-
+## the gradio interface
 with gr.Blocks(title="AutoVisGan", theme='gradio/monochrome', css=mycss) as demo:
     gr.Markdown("## AutoVisGan")
     with gr.Column():
@@ -517,25 +522,18 @@ with gr.Blocks(title="AutoVisGan", theme='gradio/monochrome', css=mycss) as demo
             gallery = gr.Gallery(label="Generated images", show_label=False, elem_id="gallery", columns=[3], rows=[1], object_fit="contain", height="auto")
 
 
-
-
-
-    #functions for the dropdowns
+    ## functions for the dropdown menus
     simple_input.change(changeView, simple_input, outputs=[ext_cols, int_cols, else_cols])
     int_focus_select.change(changeInt, int_focus_select, outputs=[character_accordion, device_accordion])
 
-    # Finetuining
+    ## functions for finetuining 
     negative_prompt_input.change(generate_negative_prompt, negative_prompt_input, prompt_output)
     angle_input.change(generate_angle_prompt, angle_input, prompt_output)
 
-
-    ##character_input.change(generate_character_prompt, character_input, prompt_output)
-
-
-    # select the car
+    ## select the car
     car_input.change(generate_car_prompt, car_input, [prompt_output])
 
-    #exterior car
+    ## functions for the exterior view
     scene_input.change(generate_scene_prompt, scene_input, prompt_output)
     action_input.change(generate_car_action_prompt, action_input, prompt_output)
 
@@ -547,7 +545,7 @@ with gr.Blocks(title="AutoVisGan", theme='gradio/monochrome', css=mycss) as demo
     character_emotions_input_ext.change(generate_emotions_prompt, character_emotions_input_ext, prompt_output)
     ext_details_input.change(generate_ext_details_prompt, ext_details_input, prompt_output)
 
-    # interior car
+    ## functions for the interior car
     character_select_int.change(generate_character_prompt, character_select_int, prompt_output)
     character_action_input_int.change(generate_action_prompt, character_action_input_int, prompt_output)
     character_emotions_input_int.change(generate_emotions_prompt, character_emotions_input_int, prompt_output)
@@ -555,10 +553,10 @@ with gr.Blocks(title="AutoVisGan", theme='gradio/monochrome', css=mycss) as demo
     device_describition_input.change(generate_device_prompt, device_describition_input, prompt_output)
     int_details_input.change(generate_int_details_prompt, int_details_input, prompt_output)
 
-    # else
+    ## else
     else_prompt_input.change(generate_else_prompt, else_prompt_input, prompt_output)
 
-    # Buttons
+    ## functions for the buttons
     savecharacter_btn.click(addcharacter, inputs=[character_name_input, character_lookalike_input, character_clothes_input, character_age_input, character_height_input, character_weight_input, character_details_input], outputs=[character_choices, character_select_ext, character_select_int])
     savecar_btn.click(addcar, inputs=[car_name_input, car_choice_input, car_exterior_description, car_interior_description, car_details_input], outputs=[car_choices, car_input])
     start_button.click(fn=showmenu, inputs=[], outputs=[generating, start_button, infotext])
